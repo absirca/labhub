@@ -1,18 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LabWall — Floor Allocation Dashboard V3.510</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CA PC Time Allocation</title>
+<link rel="icon" type="image/png" href="calogo.png">
 <style>
 :root{--bg:#0b0f1a;--surface:#131929;--border:#1e2d45;--accent:#2a7de1;--accent-2:#1bb67a;--warn:#e8a020;--danger:#e03c3c;--text:#dce8f7;--muted:#6b8ab0;--card-r:10px;--font:system-ui,-apple-system,sans-serif;--c-class:#2a7de1;--c-prog:#9561e8;--c-typing:#1bb67a;--c-research:#e8a020;--c-art:#e0507a;--c-ai:#e05020}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;padding:0}
 header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:100}
 .logo{display:flex;align-items:center;gap:10px}
-.logo-icon{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
-.logo-text{font-size:1rem;font-weight:700;letter-spacing:-0.02em} .logo-sub{font-size:0.72rem;color:var(--muted)}
+.logo-image{width:40px;height:40px;border-radius:8px;object-fit:contain}
+.logo-text{font-size:1rem;font-weight:700;letter-spacing:-0.02em}
+.logo-sub{font-size:0.72rem;color:var(--muted)}
 .header-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .pill{font-size:0.72rem;padding:4px 10px;border-radius:999px;font-weight:600;border:1px solid}
-.pill-green{color:var(--accent-2);border-color:var(--accent-2)} .pill-blue{color:var(--accent);border-color:var(--accent)}
+.pill-green{color:var(--accent-2);border-color:var(--accent-2)}
+.pill-blue{color:var(--accent);border-color:var(--accent)}
 #sync-time{font-size:0.7rem;color:var(--muted)}
 #ab-badge{display:none;font-size:0.75rem;padding:4px 10px;border-radius:999px;background:rgba(232,32,32,0.15);color:var(--danger);border:1px solid var(--danger)}
 main{padding:18px 16px;max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
@@ -20,49 +25,88 @@ main{padding:18px 16px;max-width:900px;margin:0 auto;display:flex;flex-direction
 .pc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px}
 .pc-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--card-r);padding:14px 12px;position:relative;overflow:hidden;transition:border-color 0.2s}
 .pc-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--status-color,var(--border))}
-.pc-card.status-available{--status-color:var(--accent-2)} .pc-card.status-in-session{--status-color:var(--accent)} .pc-card.status-admin{--status-color:var(--warn)} .pc-card.status-offline{--status-color:var(--muted)}
-.pc-name{font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:6px} .pc-student{font-size:1rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-card.status-available{--status-color:var(--accent-2)}
+.pc-card.status-in-session{--status-color:var(--accent)}
+.pc-card.status-admin{--status-color:var(--warn)}
+.pc-card.status-offline{--status-color:var(--muted)}
+.pc-name{font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:6px}
+.pc-student{font-size:1rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pc-purpose{font-size:0.7rem;margin-top:3px}
 .pc-timer{margin-top:10px;font-size:0.75rem;font-weight:bold;color:var(--accent);display:flex;align-items:center;justify-content:space-between}
 .form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--card-r);padding:18px}
 .form-card h3{font-size:0.9rem;font-weight:700;margin-bottom:14px}
-.form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px} .form-group{display:flex;flex-direction:column;gap:5px;flex:1;min-width:140px}
+.form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.form-group{display:flex;flex-direction:column;gap:5px;flex:1;min-width:140px}
 label{font-size:0.72rem;color:var(--muted);font-weight:600}
 input,select{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px 10px;font-size:0.85rem;font-family:var(--font);width:100%;transition:border-color 0.2s}
-input:focus,select:focus{outline:none;border-color:var(--accent)} select option{background:var(--surface)}
-.btn{padding:10px 18px;border-radius:7px;border:none;font-weight:700;font-size:0.85rem;cursor:pointer;transition:transform 0.1s;font-family:var(--font)} .btn:active{transform:scale(0.97)}
-.btn-primary{background:var(--accent);color:#fff} .btn-primary:hover{opacity:0.85}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+select option{background:var(--surface)}
+.btn{padding:10px 18px;border-radius:7px;border:none;font-weight:700;font-size:0.85rem;cursor:pointer;transition:transform 0.1s;font-family:var(--font)}
+.btn:active{transform:scale(0.97)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{opacity:0.85}
 .form-result{margin-top:10px;font-size:0.8rem;padding:10px 12px;border-radius:6px;display:none}
-.form-result.ok{background:rgba(27,182,122,0.1);color:var(--accent-2);border:1px solid rgba(27,182,122,0.3)} .form-result.error{background:rgba(224,60,60,0.1);color:var(--danger);border:1px solid rgba(224,60,60,0.3)}
+.form-result.ok{background:rgba(27,182,122,0.1);color:var(--accent-2);border:1px solid rgba(27,182,122,0.3)}
+.form-result.error{background:rgba(224,60,60,0.1);color:var(--danger);border:1px solid rgba(224,60,60,0.3)}
 .list-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--card-r);overflow:hidden}
 .list-header{padding:12px 16px;border-bottom:1px solid var(--border);font-size:0.85rem;font-weight:700;display:flex;justify-content:space-between;align-items:center}
 .list-count{font-size:0.7rem;color:var(--muted)}
-.list-item{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;font-size:0.82rem} .list-item:last-child{border-bottom:none}
-.list-item-id{font-weight:700;min-width:80px} .list-item-meta{flex:1;color:var(--muted);font-size:0.75rem}
+.list-item{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;font-size:0.82rem}
+.list-item:last-child{border-bottom:none}
+.list-item-id{font-weight:700;min-width:80px}
+.list-item-meta{flex:1;color:var(--muted);font-size:0.75rem}
 .list-item-badge{font-size:0.65rem;padding:2px 8px;border-radius:999px;font-weight:700;white-space:nowrap}
 .empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:0.8rem}
-.pending-card{background:rgba(232,160,32,0.06);border:1px solid rgba(232,160,32,0.25);border-radius:var(--card-r)} .pending-card .list-header{border-bottom-color:rgba(232,160,32,0.2);color:var(--warn)}
-.p-online_class{background:rgba(42,125,225,0.15);color:var(--c-class)} .p-programming{background:rgba(149,97,232,0.15);color:var(--c-prog)} .p-typing{background:rgba(27,182,122,0.15);color:var(--c-typing)} .p-research{background:rgba(232,160,32,0.15);color:var(--c-research)} .p-art_music{background:rgba(224,80,122,0.15);color:var(--c-art)} .p-ai_bigdata{background:rgba(224,80,32,0.15);color:var(--c-ai)} .p-general{background:rgba(107,138,176,0.15);color:var(--muted)}
-@keyframes shimmer{0%{opacity:0.4}60%{opacity:0.8}100%{opacity:0.4}} .skeleton{animation:shimmer 1.4s ease infinite;background:var(--border);border-radius:4px;height:14px}
-@media(max-width:540px){.pc-grid{grid-template-columns:repeat(2,1fr)} .form-row{flex-direction:column} header{padding:10px 14px} main{padding:12px 10px}}
+.pending-card{background:rgba(232,160,32,0.06);border:1px solid rgba(232,160,32,0.25);border-radius:var(--card-r)}
+.pending-card .list-header{border-bottom-color:rgba(232,160,32,0.2);color:var(--warn)}
+.p-online_class{background:rgba(42,125,225,0.15);color:var(--c-class)}
+.p-programming{background:rgba(149,97,232,0.15);color:var(--c-prog)}
+.p-typing{background:rgba(27,182,122,0.15);color:var(--c-typing)}
+.p-research{background:rgba(232,160,32,0.15);color:var(--c-research)}
+.p-art_music{background:rgba(224,80,122,0.15);color:var(--c-art)}
+.p-ai_bigdata{background:rgba(224,80,32,0.15);color:var(--c-ai)}
+.p-general{background:rgba(107,138,176,0.15);color:var(--muted)}
+@keyframes shimmer{0%{opacity:0.4}60%{opacity:0.8}100%{opacity:0.4}}
+.skeleton{animation:shimmer 1.4s ease infinite;background:var(--border);border-radius:4px;height:14px}
+@media(max-width:540px){.pc-grid{grid-template-columns:repeat(2,1fr)}.form-row{flex-direction:column}header{padding:10px 14px}main{padding:12px 10px}}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo"><div class="logo-icon">📱</div><div><div class="logo-text">LabWall Floor</div><div class="logo-sub">In-Charge Dashboard V3.510</div></div></div>
-  <div class="header-right"><span id="ab-badge">⚠ Pending AB Approval</span><span class="pill pill-green" id="online-count">— PCs</span><span class="pill pill-blue" id="sync-status">Connecting…</span><span id="sync-time"></span></div>
+  <div class="logo">
+    <img src="calogo.png" alt="CA Logo" class="logo-image">
+    <div>
+      <div class="logo-text">CA PC Time Allocation</div>
+      <div class="logo-sub">In-Charge Dashboard V3.510</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span id="ab-badge">⚠ Pending AB Approval</span>
+    <span class="pill pill-green" id="online-count">— PCs</span>
+    <span class="pill pill-blue" id="sync-status">Connecting…</span>
+    <span id="sync-time"></span>
+  </div>
 </header>
 
 <main>
+
+  <!-- PC Grid -->
   <div>
     <div class="section-title">Lab PCs — Live Status</div>
     <div class="pc-grid" id="pc-grid">
-      <div class="pc-card"><div class="pc-name"><div class="skeleton" style="width:60px"></div></div><div class="pc-student"><div class="skeleton" style="width:90px;height:18px;margin-top:4px"></div></div></div>
-      <div class="pc-card"><div class="pc-name"><div class="skeleton" style="width:60px"></div></div><div class="pc-student"><div class="skeleton" style="width:90px;height:18px;margin-top:4px"></div></div></div>
+      <div class="pc-card">
+        <div class="pc-name"><div class="skeleton" style="width:60px"></div></div>
+        <div class="pc-student"><div class="skeleton" style="width:90px;height:18px;margin-top:4px"></div></div>
+      </div>
+      <div class="pc-card">
+        <div class="pc-name"><div class="skeleton" style="width:60px"></div></div>
+        <div class="pc-student"><div class="skeleton" style="width:90px;height:18px;margin-top:4px"></div></div>
+      </div>
     </div>
   </div>
 
+  <!-- Submit Request Form -->
   <div class="form-card">
     <h3>📋 Submit Session Request for a Student</h3>
     <div class="form-row">
@@ -71,10 +115,14 @@ input:focus,select:focus{outline:none;border-color:var(--accent)} select option{
         <input list="dl-students" id="f-student" placeholder="Type or click to search..." autocomplete="off" autocapitalize="none">
         <datalist id="dl-students"></datalist>
       </div>
-      <div class="form-group"><label>Your Incharge ID / Name</label><input type="text" id="f-incharge" placeholder="e.g. Foysol" autocomplete="off"></div>
+      <div class="form-group">
+        <label>Your Incharge ID / Name</label>
+        <input type="text" id="f-incharge" placeholder="e.g. Foysol" autocomplete="off">
+      </div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Purpose</label>
+      <div class="form-group">
+        <label>Purpose</label>
         <select id="f-purpose">
           <option value="online_class">Online Class</option>
           <option value="programming">Programming / Coding</option>
@@ -84,31 +132,46 @@ input:focus,select:focus{outline:none;border-color:var(--accent)} select option{
           <option value="ai_bigdata">AI & Big Data</option>
         </select>
       </div>
-      <div class="form-group" id="f-link-group"><label>Video Link <span style="color:var(--muted);font-weight:400">(optional, YouTube)</span></label><input type="url" id="f-link" placeholder="https://youtube.com/watch?v=..." autocomplete="off"></div>
+      <div class="form-group" id="f-link-group">
+        <label>Video Link <span style="color:var(--muted);font-weight:400">(optional, YouTube)</span></label>
+        <input type="url" id="f-link" placeholder="https://youtube.com/watch?v=..." autocomplete="off">
+      </div>
     </div>
     <button class="btn btn-primary" onclick="submitRequest()">Submit for Student</button>
     <div class="form-result" id="form-result"></div>
   </div>
 
+  <!-- Pending AB Approval -->
   <div class="list-card pending-card" id="pending-section" style="display:none">
     <div class="list-header">⚠ Needs AB Sir Approval<span class="list-count" id="pending-count"></span></div>
     <div id="pending-list"></div>
   </div>
 
+  <!-- Queue -->
   <div class="list-card">
     <div class="list-header">⏳ Waiting Queue<span class="list-count" id="queue-count">0 waiting</span></div>
     <div id="queue-list"><div class="empty">No students waiting</div></div>
   </div>
 
+  <!-- Recent Sessions -->
   <div class="list-card">
     <div class="list-header">📋 Recent Sessions (Today)<span class="list-count" id="recent-count"></span></div>
     <div id="recent-list"><div class="empty">No recent sessions</div></div>
   </div>
+
 </main>
 
 <script>
-var GAS_URL = "https://script.google.com/macros/s/AKfycbwPil4jN4G7ah-gJH_sngNKPk3_kzEKXSQeGuvNis-0rShwwwvPAB4684-ESIL5A5K3IQ/exec"; 
-var PURPOSE_LABELS = {online_class:"Online Class",programming:"Programming",typing:"Typing",research:"Research",art_music:"Art / Music",ai_bigdata:"AI & Big Data",general:"General"};
+var GAS_URL = "https://script.google.com/macros/s/AKfycbwPil4jN4G7ah-gJH_sngNKPk3_kzEKXSQeGuvNis-0rShwwwvPAB4684-ESIL5A5K3IQ/exec";
+var PURPOSE_LABELS = {
+  online_class: "Online Class",
+  programming: "Programming",
+  typing: "Typing",
+  research: "Research",
+  art_music: "Art / Music",
+  ai_bigdata: "AI & Big Data",
+  general: "General"
+};
 
 var fPurpose = document.getElementById('f-purpose');
 var fLinkGroup = document.getElementById('f-link-group');
@@ -118,28 +181,34 @@ fPurpose.addEventListener('change', function(){
 fLinkGroup.style.display = fPurpose.value === 'online_class' ? 'flex' : 'none';
 
 async function gasPost(payload) {
-  var res = await fetch(GAS_URL, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify(payload)}); 
+  var res = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  });
   return res.json();
 }
 
 async function fetchStudents() {
   try {
     var d = await gasPost({action: 'get_students_list'});
-    if(d.ok && d.users) {
+    if (d.ok && d.users) {
       document.getElementById('dl-students').innerHTML = d.users.sort().map(u => '<option value="' + u + '">').join('');
     }
   } catch(e) {}
 }
 
-function purposeBadge(p) { return '<span class="list-item-badge p-' + (p||"general") + '">' + (PURPOSE_LABELS[p]||p||"Unknown") + '</span>'; }
+function purposeBadge(p) {
+  return '<span class="list-item-badge p-' + (p || "general") + '">' + (PURPOSE_LABELS[p] || p || "Unknown") + '</span>';
+}
 
 function renderPCs(pcs) {
   var grid = document.getElementById('pc-grid');
-  if (!pcs || !pcs.length) { 
-    grid.innerHTML = '<div style="color:var(--muted);font-size:.8rem;padding:16px">No PCs synchronized with master server.</div>'; 
-    return; 
+  if (!pcs || !pcs.length) {
+    grid.innerHTML = '<div style="color:var(--muted);font-size:.8rem;padding:16px">No PCs synchronized with master server.</div>';
+    return;
   }
-  
+
   var activeCount = 0;
   grid.innerHTML = pcs.map(function(pc) {
     var isInactive = pc.op_state && pc.op_state.toLowerCase() === 'inactive';
@@ -152,7 +221,8 @@ function renderPCs(pcs) {
     var purposeHtml = isSession ? purposeBadge(pc.purpose) : '';
     var timeHtml = isSession ? '<div class="pc-timer">⏳ ' + pc.rem + ' min left</div>' : '<div style="height:25px"></div>';
 
-    return '<div class="pc-card ' + sc + '"><div class="pc-name">' + pc.pc + '</div>' +
+    return '<div class="pc-card ' + sc + '">' +
+      '<div class="pc-name">' + pc.pc + '</div>' +
       '<div class="pc-student">' + studentText + '</div>' +
       '<div class="pc-purpose">' + purposeHtml + '</div>' +
       timeHtml + '</div>';
@@ -162,28 +232,58 @@ function renderPCs(pcs) {
 }
 
 function renderQueue(queue) {
-  var el = document.getElementById('queue-list'); document.getElementById('queue-count').textContent = queue.length + ' waiting';
-  if (!queue.length) { el.innerHTML = '<div class="empty">No students in queue</div>'; return; }
+  var el = document.getElementById('queue-list');
+  document.getElementById('queue-count').textContent = queue.length + ' waiting';
+  if (!queue.length) {
+    el.innerHTML = '<div class="empty">No students in queue</div>';
+    return;
+  }
   el.innerHTML = queue.map(function(q) {
-    return '<div class="list-item"><div class="list-item-id">' + q.student + '</div><div class="list-item-meta">' + purposeBadge(q.purpose) + (q.submitted_by !== q.student ? ' — via ' + q.submitted_by : '') + '<br>Requested ' + q.submitted_at + '</div></div>';
+    return '<div class="list-item">' +
+      '<div class="list-item-id">' + q.student + '</div>' +
+      '<div class="list-item-meta">' + purposeBadge(q.purpose) +
+      (q.submitted_by !== q.student ? ' — via ' + q.submitted_by : '') +
+      '<br>Requested ' + q.submitted_at + '</div></div>';
   }).join('');
 }
 
 function renderRecent(sessions) {
-  var el = document.getElementById('recent-list'); document.getElementById('recent-count').textContent = sessions.length + ' sessions';
-  if (!sessions.length) { el.innerHTML = '<div class="empty">No sessions recorded today</div>'; return; }
+  var el = document.getElementById('recent-list');
+  document.getElementById('recent-count').textContent = sessions.length + ' sessions';
+  if (!sessions.length) {
+    el.innerHTML = '<div class="empty">No sessions recorded today</div>';
+    return;
+  }
   el.innerHTML = sessions.map(function(s) {
     var statusColor = s.status === 'active' ? 'var(--accent-2)' : 'var(--muted)';
-    return '<div class="list-item"><div class="list-item-id">' + s.student + '</div><div class="list-item-meta">' + purposeBadge(s.purpose) + ' · ' + s.pc + ' · ' + s.alloc + ' min<br><span style="color:var(--muted);font-size:.7rem">' + s.start + '</span></div><span style="font-size:.7rem;color:' + statusColor + '">' + s.status + '</span></div>';
+    return '<div class="list-item">' +
+      '<div class="list-item-id">' + s.student + '</div>' +
+      '<div class="list-item-meta">' + purposeBadge(s.purpose) +
+      ' · ' + s.pc + ' · ' + s.alloc + ' min' +
+      '<br><span style="color:var(--muted);font-size:.7rem">' + s.start + '</span></div>' +
+      '<span style="font-size:.7rem;color:' + statusColor + '">' + s.status + '</span></div>';
   }).join('');
 }
 
 function renderPending(pending) {
-  var section = document.getElementById('pending-section'), abBadge = document.getElementById('ab-badge');
-  if (!pending.length) { section.style.display = 'none'; abBadge.style.display = 'none'; return; }
-  section.style.display = ''; abBadge.style.display = ''; document.getElementById('pending-count').textContent = pending.length + ' pending';
+  var section = document.getElementById('pending-section');
+  var abBadge = document.getElementById('ab-badge');
+  if (!pending.length) {
+    section.style.display = 'none';
+    abBadge.style.display = 'none';
+    return;
+  }
+  section.style.display = '';
+  abBadge.style.display = '';
+  document.getElementById('pending-count').textContent = pending.length + ' pending';
   document.getElementById('pending-list').innerHTML = pending.map(function(r) {
-    return '<div class="list-item"><div class="list-item-id">' + r.student + '</div><div class="list-item-meta">' + purposeBadge(r.purpose) + ' · ' + r.mins + ' min requested' + (r.link ? '<br><a href="' + r.link + '" target="_blank" style="color:var(--accent);font-size:.7rem">View video ↗</a>' : '') + '<br><span style="color:var(--muted);font-size:.7rem">Submitted by ' + r.by + ' at ' + r.at + '</span></div><span style="font-size:.7rem;color:var(--warn)">Awaiting AB Approval</span></div>';
+    return '<div class="list-item">' +
+      '<div class="list-item-id">' + r.student + '</div>' +
+      '<div class="list-item-meta">' + purposeBadge(r.purpose) +
+      ' · ' + r.mins + ' min requested' +
+      (r.link ? '<br><a href="' + r.link + '" target="_blank" style="color:var(--accent);font-size:.7rem">View video ↗</a>' : '') +
+      '<br><span style="color:var(--muted);font-size:.7rem">Submitted by ' + r.by + ' at ' + r.at + '</span></div>' +
+      '<span style="font-size:.7rem;color:var(--warn)">Awaiting AB Approval</span></div>';
   }).join('');
 }
 
@@ -194,25 +294,39 @@ async function submitRequest() {
   var link = document.getElementById('f-link').value.trim();
 
   if (!student) { showFormResult('Please type or select a Student ID.', false); return; }
-  if (!incharge){ showFormResult('Incharge ID is required.', false); return; }
+  if (!incharge) { showFormResult('Incharge ID is required.', false); return; }
   showFormResult('Submitting…', null);
 
   try {
-    var res = await gasPost({action:'incharge_request', student_id:student, incharge_id:incharge, purpose:purpose, video_link:link, floor:'2'});
+    var res = await gasPost({
+      action: 'incharge_request',
+      student_id: student,
+      incharge_id: incharge,
+      purpose: purpose,
+      video_link: link,
+      floor: '2'
+    });
     if (res.ok) {
       var msg = '✅ Submitted! ' + student + ' allocated ' + res.allocated_mins + ' min for ' + PURPOSE_LABELS[purpose] + '.';
       if (res.needs_ab_approval) msg += ' ⚠ Requires AB Sir approval (duration >= 2h).';
-      showFormResult(msg, true); 
-      document.getElementById('f-student').value = ''; 
+      showFormResult(msg, true);
+      document.getElementById('f-student').value = '';
       document.getElementById('f-incharge').value = '';
-      document.getElementById('f-link').value = ''; 
+      document.getElementById('f-link').value = '';
       fetchDashboard();
-    } else { showFormResult('Error: ' + (res.error || 'Request rejected'), false); }
-  } catch(err) { showFormResult('Network error. Check lab connectivity.', false); }
+    } else {
+      showFormResult('Error: ' + (res.error || 'Request rejected'), false);
+    }
+  } catch(err) {
+    showFormResult('Network error. Check lab connectivity.', false);
+  }
 }
 
 function showFormResult(msg, ok) {
-  var el = document.getElementById('form-result'); el.textContent = msg; el.className = 'form-result' + (ok === true ? ' ok' : ok === false ? ' error' : ''); el.style.display = 'block';
+  var el = document.getElementById('form-result');
+  el.textContent = msg;
+  el.className = 'form-result' + (ok === true ? ' ok' : ok === false ? ' error' : '');
+  el.style.display = 'block';
   if (ok !== null) setTimeout(() => { if (ok) el.style.display = 'none'; }, 8000);
 }
 
@@ -221,16 +335,28 @@ async function fetchDashboard() {
   try {
     var data = await gasPost({ action: 'get_dashboard' });
     if (data.ok) {
-      renderPCs(data.pcs); renderQueue(data.queue || []); renderRecent(data.recent || []); renderPending(data.pending || []);
-      document.getElementById('sync-status').textContent = 'Live'; document.getElementById('sync-status').style.color = 'var(--accent-2)'; document.getElementById('sync-time').textContent = 'Synced ' + (data.server_time || new Date().toLocaleTimeString()); lastFetchFailed = false;
-    } else throw new Error('GAS error');
+      renderPCs(data.pcs);
+      renderQueue(data.queue || []);
+      renderRecent(data.recent || []);
+      renderPending(data.pending || []);
+      document.getElementById('sync-status').textContent = 'Live';
+      document.getElementById('sync-status').style.color = 'var(--accent-2)';
+      document.getElementById('sync-time').textContent = 'Synced ' + (data.server_time || new Date().toLocaleTimeString());
+      lastFetchFailed = false;
+    } else {
+      throw new Error('GAS error');
+    }
   } catch(err) {
-    if (!lastFetchFailed) { document.getElementById('sync-status').textContent = 'Offline'; document.getElementById('sync-status').style.color = 'var(--danger)'; lastFetchFailed = true; }
+    if (!lastFetchFailed) {
+      document.getElementById('sync-status').textContent = 'Offline';
+      document.getElementById('sync-status').style.color = 'var(--danger)';
+      lastFetchFailed = true;
+    }
   }
 }
 
-fetchStudents(); 
-fetchDashboard(); 
+fetchStudents();
+fetchDashboard();
 setInterval(fetchDashboard, 15000);
 </script>
 </body>
