@@ -1,33 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LabWall — Floor Allocation Dashboard V3.510 (Auto-Approve)</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LabWall — Floor Allocation Dashboard V3.600</title>
 <link rel="icon" type="image/png" href="calogo.png">
 <style>
 :root{--bg:#0b0f1a;--surface:#131929;--border:#1e2d45;--accent:#2a7de1;--accent-2:#1bb67a;--warn:#e8a020;--danger:#e03c3c;--text:#dce8f7;--muted:#6b8ab0;--card-r:10px;--font:system-ui,-apple-system,sans-serif;--c-class:#2a7de1;--c-prog:#9561e8;--c-typing:#1bb67a;--c-research:#e8a020;--c-art:#e0507a;--c-ai:#e05020}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;padding:0}
-
-/* --- LOADER GRAPHICS --- */
-.loader-overlay {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(11, 15, 26, 0.85); z-index: 999999;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    color: var(--accent); font-weight: 700; font-size: 1.2rem;
-    backdrop-filter: blur(5px); transition: opacity 0.3s;
-}
-.spinner {
-    width: 45px; height: 45px; border: 4px solid var(--border);
-    border-top-color: var(--accent); border-radius: 50%;
-    animation: spin 1s linear infinite; margin-bottom: 15px;
-}
-.fetching-indicator {
-    display: inline-block; width: 12px; height: 12px; border: 2px solid var(--border);
-    border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite;
-    margin-right: 6px; vertical-align: middle; display: none;
-}
-@keyframes spin { 100% { transform: rotate(360deg); } }
-
+.loader-overlay {position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(11,15,26,0.85);z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--accent);font-weight:700;font-size:1.2rem;backdrop-filter:blur(5px);transition:opacity 0.3s;}
+.spinner {width:45px;height:45px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:15px;}
+.fetching-indicator {display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin-right:6px;vertical-align:middle;display:none;}
+@keyframes spin {100%{transform:rotate(360deg);}}
 header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:100}
 .logo{display:flex;align-items:center;gap:10px}
 .logo-image{width:40px;height:40px;object-fit:contain;border-radius:6px}
@@ -36,7 +19,6 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 .pill{font-size:0.72rem;padding:4px 10px;border-radius:999px;font-weight:600;border:1px solid}
 .pill-green{color:var(--accent-2);border-color:var(--accent-2)} .pill-blue{color:var(--accent);border-color:var(--accent)}
 #sync-time{font-size:0.7rem;color:var(--muted)}
-#ab-badge{display:none;font-size:0.75rem;padding:4px 10px;border-radius:999px;font-weight:700;border:1px solid;transition:all 0.3s}
 main{padding:18px 16px;max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
 .section-title{display:block;font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px}
 .pc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px}
@@ -79,10 +61,9 @@ input:focus,select:focus{outline:none;border-color:var(--accent)} select option{
 <header>
   <div class="logo">
     <img src="calogo.png" alt="Logo" class="logo-image">
-    <div><div class="logo-text">LabWall Floor</div><div class="logo-sub">In-Charge Dashboard V3.510</div></div>
+    <div><div class="logo-text">LabWall Floor</div><div class="logo-sub">In-Charge Dashboard V3.600</div></div>
   </div>
   <div class="header-right">
-    <span id="ab-badge"></span>
     <span class="pill pill-green" id="online-count">— PCs</span>
     <span class="pill pill-blue"><span class="fetching-indicator" id="sync-spinner"></span><span id="sync-status">Connecting…</span></span>
     <span id="sync-time"></span>
@@ -137,12 +118,12 @@ input:focus,select:focus{outline:none;border-color:var(--accent)} select option{
   </div>
 
   <div class="list-card pending-card" id="pending-section" style="display:none">
-    <div class="list-header">⚠ Needs Authorization<span class="list-count" id="pending-count"></span></div>
+    <div class="list-header">⚠ Pending Master Server Approval<span class="list-count" id="pending-count"></span></div>
     <div id="pending-list"></div>
   </div>
 
   <div class="list-card">
-    <div class="list-header">⏳ Waiting Queue<span class="list-count" id="queue-count">0 waiting</span></div>
+    <div class="list-header">⏳ Live Waiting Queue<span class="list-count" id="queue-count">0 waiting</span></div>
     <div id="queue-list"><div class="empty">No students waiting</div></div>
   </div>
 
@@ -159,6 +140,7 @@ var PURPOSE_LABELS = {online_class:"Online Class",programming:"Programming",typi
 var allStudents = [];
 var currentPending = [];
 var currentQueue = [];
+var lastKnownPCs = [];
 var initialLoad = true;
 var isSubmitting = false;
 
@@ -169,52 +151,13 @@ fPurpose.addEventListener('change', function(){
 });
 fLinkGroup.style.display = fPurpose.value === 'online_class' ? 'flex' : 'none';
 
-function isTeacherAuthorized(name) {
-  var auths = ["AB Sir", "Kazi Sir", "Rana Sir", "Nurul Sir", "Habib Sir"];
-  return auths.includes(name);
-}
-
-function updateAuthUI() {
-  var inchargeName = document.getElementById('f-incharge').value;
-  var isAuth = isTeacherAuthorized(inchargeName);
-  var badge = document.getElementById('ab-badge');
-  var subBtn = document.getElementById('submit-btn');
-  
-  if (!inchargeName) {
-      badge.style.display = 'none';
-      subBtn.textContent = "Submit Request";
-      renderPending(currentPending);
-      return;
-  }
-  
-  badge.style.display = 'inline-block';
-  if(isAuth) {
-      badge.textContent = "🛡️ Auto-Approve: ON";
-      badge.style.color = "var(--accent-2)";
-      badge.style.borderColor = "var(--accent-2)";
-      badge.style.background = "rgba(27,182,122,0.15)";
-      if (!isSubmitting) subBtn.textContent = "Submit & Auto-Approve";
-  } else {
-      badge.textContent = "⚠ Standard Quota Mode";
-      badge.style.color = "var(--warn)";
-      badge.style.borderColor = "var(--warn)";
-      badge.style.background = "rgba(232,160,32,0.15)";
-      if (!isSubmitting) subBtn.textContent = "Submit Request";
-  }
-  renderPending(currentPending);
-}
-
 document.getElementById('f-incharge').addEventListener('change', function() {
   localStorage.setItem('labwall_incharge_name', this.value);
-  updateAuthUI();
 });
 
 document.addEventListener('DOMContentLoaded', function() {
   var savedIncharge = localStorage.getItem('labwall_incharge_name');
-  if (savedIncharge) {
-    document.getElementById('f-incharge').value = savedIncharge;
-    updateAuthUI();
-  }
+  if (savedIncharge) { document.getElementById('f-incharge').value = savedIncharge; }
 });
 
 async function gasPost(payload) {
@@ -233,6 +176,23 @@ async function fetchStudents() {
 }
 
 function purposeBadge(p) { return '<span class="list-item-badge p-' + (p||"general") + '">' + (PURPOSE_LABELS[p]||p||"Unknown") + '</span>'; }
+
+// INTELLIGENT PC LOCATOR (বুদ্ধিমান পিসি নির্দেশক)
+function getSuggestedPC() {
+  if (!lastKnownPCs || lastKnownPCs.length === 0) return "Any free PC";
+  var available = lastKnownPCs.filter(function(p) {
+    if (p.pc.toLowerCase().includes('abubakar')) return false; 
+    if (p.op_state && p.op_state.toLowerCase() === 'inactive') return false; 
+    var noStudent = !p.student || p.student === 'LOCKED' || p.student === 'NONE' || p.student === '—' || p.student.trim() === '';
+    var isOffline = p.status && p.status.toLowerCase() === 'offline';
+    return noStudent || isOffline;
+  });
+  if (available.length > 0) {
+    var idx = Math.floor(Math.random() * available.length); 
+    return available[idx].pc;
+  }
+  return "Wait for a PC to free up";
+}
 
 function renderPCs(pcs) {
   var grid = document.getElementById('pc-grid');
@@ -275,7 +235,7 @@ function renderQueue(queue) {
       '<div class="list-item-id">' + q.student + '</div>' +
       '<div class="list-item-meta">' + purposeBadge(q.purpose) +
       (q.submitted_by !== q.student ? ' — via ' + q.submitted_by : '') +
-      '<br>Requested ' + q.submitted_at + '</div></div>';
+      '<br><span style="color:var(--accent-2)">🖥️ Assigned to: ' + q.pc + '</span></div></div>';
   }).join('');
 }
 
@@ -297,34 +257,16 @@ function renderRecent(sessions) {
   }).join('');
 }
 
-window.autoApprove = async function(reqId) {
-  if (!isTeacherAuthorized(document.getElementById('f-incharge').value)) {
-    showFormResult('❌ Unauthorized: Only Lab Instructors can force-approve.', false);
-    return;
-  }
-  showFormResult('Forcing session approval...', null);
-  document.getElementById('sync-spinner').style.display = 'inline-block';
-  await gasPost({action: 'ab_approve_request', request_id: reqId, approved: true});
-  fetchDashboard();
-  showFormResult('✅ Session Force-Approved & Time Allocated!', true);
-};
-
 function renderPending(pending) {
   var section = document.getElementById('pending-section');
   if (!pending.length) { section.style.display = 'none'; return; }
   section.style.display = ''; document.getElementById('pending-count').textContent = pending.length + ' pending';
 
-  var isAuth = isTeacherAuthorized(document.getElementById('f-incharge').value);
-
   document.getElementById('pending-list').innerHTML = pending.map(function(r) {
-    var bypassBtn = isAuth ? '<button class="btn btn-primary" style="padding:5px 10px; font-size:0.75rem; background:var(--accent-2)" onclick="autoApprove(\'' + r.req_id + '\')">✓ Approve Now</button>' : '';
-    return '<div class="list-item"><div class="list-item-id">' + r.student + '</div><div class="list-item-meta">' + purposeBadge(r.purpose) + ' · ' + r.mins + ' min requested' + (r.link ? '<br><a href="' + r.link + '" target="_blank" style="color:var(--accent);font-size:.7rem">View video ↗</a>' : '') + '<br><span style="color:var(--muted);font-size:.7rem">Submitted by ' + r.by + ' at ' + r.at + '</span></div>' + bypassBtn + '</div>';
+    return '<div class="list-item"><div class="list-item-id">' + r.student + '</div><div class="list-item-meta">' + purposeBadge(r.purpose) + ' · ' + r.mins + ' min requested' + (r.link ? '<br><a href="' + r.link + '" target="_blank" style="color:var(--accent);font-size:.7rem">View video ↗</a>' : '') + '<br><span style="color:var(--warn);font-size:.7rem">Sent to Master Server Panel for AB Sir Approval</span></div></div>';
   }).join('');
 }
 
-// -------------------------------------------------------------
-// CORE INJECTION: QUEUE CHECK & SILENT AUTO-RETRY LOOP
-// -------------------------------------------------------------
 async function submitRequest() {
   if (isSubmitting) return;
 
@@ -337,11 +279,10 @@ async function submitRequest() {
   if (!incharge) { showFormResult('Instructor Authorization is required.', false); return; }
   
   if (allStudents.length > 0 && !allStudents.includes(student)) {
-    showFormResult('Student Should first create a Lab id by writitng id and his password in paper and go to Lab instructor in person', false);
+    showFormResult('❌ Unregistered Student: Student must first create a Lab ID by writing their ID and password on paper and giving it to the Lab Instructor in person.', false);
     return;
   }
 
-  // --- 1. Prevent Duplicate Requests ---
   var alreadyInQueue = currentQueue.find(q => q.student === student);
   var alreadyPending = currentPending.find(p => p.student === student);
   if (alreadyInQueue || alreadyPending) {
@@ -349,10 +290,6 @@ async function submitRequest() {
      return;
   }
 
-  localStorage.setItem('labwall_incharge_name', incharge);
-  var isAuth = isTeacherAuthorized(incharge);
-
-  // --- 2. Button Deactivation ---
   isSubmitting = true;
   var subBtn = document.getElementById('submit-btn');
   var originalBtnText = subBtn.textContent;
@@ -360,32 +297,26 @@ async function submitRequest() {
   subBtn.style.opacity = "0.6";
   subBtn.style.cursor = "not-allowed";
 
-  showFormResult('Submitting Request…', null);
+  showFormResult('Submitting Request & Locating PC…', null);
   document.getElementById('sync-spinner').style.display = 'inline-block';
 
   var attempt = 1;
   var maxAttempts = 4;
   var success = false;
 
-  // --- 3. Auto-Retry Loop for Lock Timeouts ---
   while (attempt <= maxAttempts && !success) {
       try {
-        var res = await gasPost({action:'incharge_request', student_id:student, incharge_id:incharge, purpose:purpose, video_link:link, floor:'2'});
+        var suggestedPC = getSuggestedPC(); 
+        var res = await gasPost({action:'incharge_request', student_id:student, incharge_id:incharge, purpose:purpose, video_link:link, floor:'2', pc:suggestedPC});
+        
         if (res.ok) {
           success = true;
-          var msg = '✅ Request Registered! ' + student + ' is queued for ' + res.allocated_mins + ' min.';
+          var msg = '';
 
           if (res.needs_ab_approval) {
-            if (isAuth) {
-              msg = '✅ Teacher Auth Verified! ' + student + ' instantly allocated ' + res.allocated_mins + ' min.';
-              var dash = await gasPost({ action: 'get_dashboard' });
-              var pReq = dash.pending && dash.pending.find(r => r.student === student);
-              if(pReq) {
-                 await gasPost({action: 'ab_approve_request', request_id: pReq.req_id, approved: true});
-              }
-            } else {
-              msg = '⏳ Submitted to Pending Queue. Waiting for Instructor Approval.';
-            }
+            msg = `⏳ Heavy Request (>120m): Sent to Master Server for AB Sir approval. 🖥️ Please wait for approval, then use: ${suggestedPC}`;
+          } else {
+            msg = `✅ Request Registered! ${student} is allocated ${res.allocated_mins} min. 🖥️ Please log in at: ${suggestedPC}`;
           }
 
           showFormResult(msg, true);
@@ -414,7 +345,6 @@ async function submitRequest() {
       showFormResult('❌ Server is severely backlogged. Could not process request. Try again shortly.', false);
   }
 
-  // Restore Button UI
   isSubmitting = false;
   subBtn.textContent = originalBtnText;
   subBtn.style.opacity = "1";
@@ -424,14 +354,12 @@ async function submitRequest() {
 
 function showFormResult(msg, ok) {
   var el = document.getElementById('form-result'); el.textContent = msg; el.className = 'form-result' + (ok === true ? ' ok' : ok === false ? ' error' : ''); el.style.display = 'block';
-  if (ok !== null) setTimeout(() => { if (ok) el.style.display = 'none'; }, 8000);
+  if (ok !== null) setTimeout(() => { if (ok) el.style.display = 'none'; }, 10000);
 }
 
 var lastFetchFailed = false;
 async function fetchDashboard() {
-  if (initialLoad) {
-    document.getElementById('main-loader').style.display = 'flex';
-  }
+  if (initialLoad) { document.getElementById('main-loader').style.display = 'flex'; }
   document.getElementById('sync-spinner').style.display = 'inline-block';
   document.getElementById('sync-status').textContent = 'Fetching...';
   document.getElementById('sync-status').style.color = 'var(--warn)';
@@ -439,9 +367,10 @@ async function fetchDashboard() {
   try {
     var data = await gasPost({ action: 'get_dashboard' });
     if (data.ok) {
+      lastKnownPCs = data.pcs || [];
       currentPending = data.pending || [];
-      currentQueue = data.queue || []; // Extract queue list
-      renderPCs(data.pcs); renderQueue(currentQueue); renderRecent(data.recent || []); renderPending(currentPending);
+      currentQueue = data.queue || []; 
+      renderPCs(lastKnownPCs); renderQueue(currentQueue); renderRecent(data.recent || []); renderPending(currentPending);
       document.getElementById('sync-status').textContent = 'Live'; 
       document.getElementById('sync-status').style.color = 'var(--accent-2)'; 
       document.getElementById('sync-time').textContent = 'Synced ' + (data.server_time || new Date().toLocaleTimeString()); 
