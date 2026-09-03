@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LabWall — Floor Allocation Dashboard V3.510</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LabWall — Floor Allocation Dashboard V3.510 (Auto-Approve)</title>
 <link rel="icon" type="image/png" href="calogo.png">
 <style>
 :root{--bg:#0b0f1a;--surface:#131929;--border:#1e2d45;--accent:#2a7de1;--accent-2:#1bb67a;--warn:#e8a020;--danger:#e03c3c;--text:#dce8f7;--muted:#6b8ab0;--card-r:10px;--font:system-ui,-apple-system,sans-serif;--c-class:#2a7de1;--c-prog:#9561e8;--c-typing:#1bb67a;--c-research:#e8a020;--c-art:#e0507a;--c-ai:#e05020}
@@ -158,7 +158,9 @@ var PURPOSE_LABELS = {online_class:"Online Class",programming:"Programming",typi
 
 var allStudents = [];
 var currentPending = [];
+var currentQueue = [];
 var initialLoad = true;
+var isSubmitting = false;
 
 var fPurpose = document.getElementById('f-purpose');
 var fLinkGroup = document.getElementById('f-link-group');
@@ -167,7 +169,6 @@ fPurpose.addEventListener('change', function(){
 });
 fLinkGroup.style.display = fPurpose.value === 'online_class' ? 'flex' : 'none';
 
-// --- SECURITY: Strict Dropdown Validation ---
 function isTeacherAuthorized(name) {
   var auths = ["AB Sir", "Kazi Sir", "Rana Sir", "Nurul Sir", "Habib Sir"];
   return auths.includes(name);
@@ -192,13 +193,13 @@ function updateAuthUI() {
       badge.style.color = "var(--accent-2)";
       badge.style.borderColor = "var(--accent-2)";
       badge.style.background = "rgba(27,182,122,0.15)";
-      subBtn.textContent = "Submit & Auto-Approve";
+      if (!isSubmitting) subBtn.textContent = "Submit & Auto-Approve";
   } else {
       badge.textContent = "⚠ Standard Quota Mode";
       badge.style.color = "var(--warn)";
       badge.style.borderColor = "var(--warn)";
       badge.style.background = "rgba(232,160,32,0.15)";
-      subBtn.textContent = "Submit Request";
+      if (!isSubmitting) subBtn.textContent = "Submit Request";
   }
   renderPending(currentPending);
 }
@@ -321,7 +322,12 @@ function renderPending(pending) {
   }).join('');
 }
 
+// -------------------------------------------------------------
+// CORE INJECTION: QUEUE CHECK & SILENT AUTO-RETRY LOOP
+// -------------------------------------------------------------
 async function submitRequest() {
+  if (isSubmitting) return;
+
   var student = document.getElementById('f-student').value.trim();
   var incharge = document.getElementById('f-incharge').value.trim();
   var purpose = document.getElementById('f-purpose').value;
@@ -330,42 +336,90 @@ async function submitRequest() {
   if (!student) { showFormResult('Please type or select a Student ID.', false); return; }
   if (!incharge) { showFormResult('Instructor Authorization is required.', false); return; }
   
-  // --- STRICT ERROR PROMPT FOR UNREGISTERED STUDENTS ---
   if (allStudents.length > 0 && !allStudents.includes(student)) {
     showFormResult('Student Should first create a Lab id by writitng id and his password in paper and go to Lab instructor in person', false);
     return;
   }
 
+  // --- 1. Prevent Duplicate Requests ---
+  var alreadyInQueue = currentQueue.find(q => q.student === student);
+  var alreadyPending = currentPending.find(p => p.student === student);
+  if (alreadyInQueue || alreadyPending) {
+     showFormResult(`❌ Request Blocked: ${student} is already waiting in the Queue or Pending list.`, false);
+     return;
+  }
+
   localStorage.setItem('labwall_incharge_name', incharge);
   var isAuth = isTeacherAuthorized(incharge);
+
+  // --- 2. Button Deactivation ---
+  isSubmitting = true;
+  var subBtn = document.getElementById('submit-btn');
+  var originalBtnText = subBtn.textContent;
+  subBtn.textContent = "Processing... Please wait";
+  subBtn.style.opacity = "0.6";
+  subBtn.style.cursor = "not-allowed";
 
   showFormResult('Submitting Request…', null);
   document.getElementById('sync-spinner').style.display = 'inline-block';
 
-  try {
-    var res = await gasPost({action:'incharge_request', student_id:student, incharge_id:incharge, purpose:purpose, video_link:link, floor:'2'});
-    if (res.ok) {
-      var msg = '✅ Submitted! ' + student + ' allocated ' + res.allocated_mins + ' min for ' + PURPOSE_LABELS[purpose] + '.';
+  var attempt = 1;
+  var maxAttempts = 4;
+  var success = false;
 
-      if (res.needs_ab_approval) {
-        if (isAuth) {
-          msg = '✅ Teacher Auth Verified! ' + student + ' instantly allocated ' + res.allocated_mins + ' min.';
-          var dash = await gasPost({ action: 'get_dashboard' });
-          var pReq = dash.pending && dash.pending.find(r => r.student === student);
-          if(pReq) {
-             await gasPost({action: 'ab_approve_request', request_id: pReq.req_id, approved: true});
+  // --- 3. Auto-Retry Loop for Lock Timeouts ---
+  while (attempt <= maxAttempts && !success) {
+      try {
+        var res = await gasPost({action:'incharge_request', student_id:student, incharge_id:incharge, purpose:purpose, video_link:link, floor:'2'});
+        if (res.ok) {
+          success = true;
+          var msg = '✅ Request Registered! ' + student + ' is queued for ' + res.allocated_mins + ' min.';
+
+          if (res.needs_ab_approval) {
+            if (isAuth) {
+              msg = '✅ Teacher Auth Verified! ' + student + ' instantly allocated ' + res.allocated_mins + ' min.';
+              var dash = await gasPost({ action: 'get_dashboard' });
+              var pReq = dash.pending && dash.pending.find(r => r.student === student);
+              if(pReq) {
+                 await gasPost({action: 'ab_approve_request', request_id: pReq.req_id, approved: true});
+              }
+            } else {
+              msg = '⏳ Submitted to Pending Queue. Waiting for Instructor Approval.';
+            }
           }
-        } else {
-          msg = '⏳ Submitted to Pending Queue. Waiting for Instructor Approval.';
-        }
-      }
 
-      showFormResult(msg, true);
-      document.getElementById('f-student').value = '';
-      document.getElementById('f-link').value = '';
-      fetchDashboard();
-    } else { showFormResult('Error: ' + (res.error || 'Request rejected'), false); }
-  } catch(err) { showFormResult('Network error. Check lab connectivity.', false); document.getElementById('sync-spinner').style.display = 'none'; }
+          showFormResult(msg, true);
+          document.getElementById('f-student').value = '';
+          document.getElementById('f-link').value = '';
+          fetchDashboard();
+        } else {
+            var errStr = String(res.error || '').toLowerCase();
+            if (errStr.includes("lock") || errStr.includes("লক") || errStr.includes("prokriya") || errStr.includes("প্রক্রিয়া")) {
+                showFormResult(`Server busy... Retrying automatically (${attempt}/${maxAttempts})`, null);
+                await new Promise(r => setTimeout(r, 4000));
+                attempt++;
+            } else {
+                showFormResult('Error: ' + (res.error || 'Request rejected'), false);
+                break;
+            }
+        }
+      } catch(err) { 
+          showFormResult(`Network unstable. Retrying... (${attempt}/${maxAttempts})`, null); 
+          await new Promise(r => setTimeout(r, 4000));
+          attempt++;
+      }
+  }
+
+  if (!success && attempt > maxAttempts) {
+      showFormResult('❌ Server is severely backlogged. Could not process request. Try again shortly.', false);
+  }
+
+  // Restore Button UI
+  isSubmitting = false;
+  subBtn.textContent = originalBtnText;
+  subBtn.style.opacity = "1";
+  subBtn.style.cursor = "pointer";
+  document.getElementById('sync-spinner').style.display = 'none';
 }
 
 function showFormResult(msg, ok) {
@@ -386,7 +440,8 @@ async function fetchDashboard() {
     var data = await gasPost({ action: 'get_dashboard' });
     if (data.ok) {
       currentPending = data.pending || [];
-      renderPCs(data.pcs); renderQueue(data.queue || []); renderRecent(data.recent || []); renderPending(currentPending);
+      currentQueue = data.queue || []; // Extract queue list
+      renderPCs(data.pcs); renderQueue(currentQueue); renderRecent(data.recent || []); renderPending(currentPending);
       document.getElementById('sync-status').textContent = 'Live'; 
       document.getElementById('sync-status').style.color = 'var(--accent-2)'; 
       document.getElementById('sync-time').textContent = 'Synced ' + (data.server_time || new Date().toLocaleTimeString()); 
@@ -407,7 +462,6 @@ async function fetchDashboard() {
   }
 }
 
-// Ensure the student list is fetched completely before dismissing the initial loader
 async function bootSequence() {
     await fetchStudents();
     await fetchDashboard();
