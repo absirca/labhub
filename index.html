@@ -67,7 +67,7 @@ input:focus,select:focus{outline:none;border-color:var(--accent)} select option{
     <h3>📋 Submit Session Request for a Student</h3>
     <div class="form-row">
       <div class="form-group">
-        <label>Student's Lab ID</label>
+        <label>Student ID</label>
         <input list="dl-students" id="f-student" placeholder="Type or click to search..." autocomplete="off" autocapitalize="none">
         <datalist id="dl-students"></datalist>
       </div>
@@ -107,11 +107,8 @@ input:focus,select:focus{outline:none;border-color:var(--accent)} select option{
 </main>
 
 <script>
-var GAS_URL = "https://script.google.com/macros/s/AKfycbwPil4jN4G7ah-gJH_sngNKPk3_kzEKXSQeGuvNis-0rShwwwvPAB4684-ESIL5A5K3IQ/exec";
+var GAS_URL = "https://script.google.com/macros/s/AKfycbwPil4jN4G7ah-gJH_sngNKPk3_kzEKXSQeGuvNis-0rShwwwvPAB4684-ESIL5A5K3IQ/exec"; 
 var PURPOSE_LABELS = {online_class:"Online Class",programming:"Programming",typing:"Typing",research:"Research",art_music:"Art / Music",ai_bigdata:"AI & Big Data",general:"General"};
-
-// --- NEW: Student list storage and incharge name persistence ---
-var allStudents = [];
 
 var fPurpose = document.getElementById('f-purpose');
 var fLinkGroup = document.getElementById('f-link-group');
@@ -120,16 +117,8 @@ fPurpose.addEventListener('change', function(){
 });
 fLinkGroup.style.display = fPurpose.value === 'online_class' ? 'flex' : 'none';
 
-// --- Load persisted incharge name ---
-document.addEventListener('DOMContentLoaded', function() {
-  var savedIncharge = localStorage.getItem('labwall_incharge_name');
-  if (savedIncharge) {
-    document.getElementById('f-incharge').value = savedIncharge;
-  }
-});
-
 async function gasPost(payload) {
-  var res = await fetch(GAS_URL, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify(payload)});
+  var res = await fetch(GAS_URL, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify(payload)}); 
   return res.json();
 }
 
@@ -137,8 +126,7 @@ async function fetchStudents() {
   try {
     var d = await gasPost({action: 'get_students_list'});
     if(d.ok && d.users) {
-      allStudents = d.users; // Store for validation
-      document.getElementById('dl-students').innerHTML = allStudents.sort().map(u => '<option value="' + u + '">').join('');
+      document.getElementById('dl-students').innerHTML = d.users.sort().map(u => '<option value="' + u + '">').join('');
     }
   } catch(e) {}
 }
@@ -147,11 +135,11 @@ function purposeBadge(p) { return '<span class="list-item-badge p-' + (p||"gener
 
 function renderPCs(pcs) {
   var grid = document.getElementById('pc-grid');
-  if (!pcs || !pcs.length) {
-    grid.innerHTML = '<div style="color:var(--muted);font-size:.8rem;padding:16px">No PCs synchronized with master server.</div>';
-    return;
+  if (!pcs || !pcs.length) { 
+    grid.innerHTML = '<div style="color:var(--muted);font-size:.8rem;padding:16px">No PCs synchronized with master server.</div>'; 
+    return; 
   }
-
+  
   var activeCount = 0;
   grid.innerHTML = pcs.map(function(pc) {
     var isInactive = pc.op_state && pc.op_state.toLowerCase() === 'inactive';
@@ -164,8 +152,7 @@ function renderPCs(pcs) {
     var purposeHtml = isSession ? purposeBadge(pc.purpose) : '';
     var timeHtml = isSession ? '<div class="pc-timer">⏳ ' + pc.rem + ' min left</div>' : '<div style="height:25px"></div>';
 
-    return '<div class="pc-card ' + sc + '">' +
-      '<div class="pc-name">' + pc.pc + '</div>' +
+    return '<div class="pc-card ' + sc + '"><div class="pc-name">' + pc.pc + '</div>' +
       '<div class="pc-student">' + studentText + '</div>' +
       '<div class="pc-purpose">' + purposeHtml + '</div>' +
       timeHtml + '</div>';
@@ -175,36 +162,19 @@ function renderPCs(pcs) {
 }
 
 function renderQueue(queue) {
-  var el = document.getElementById('queue-list');
-  document.getElementById('queue-count').textContent = queue.length + ' waiting';
-  if (!queue.length) {
-    el.innerHTML = '<div class="empty">No students in queue</div>';
-    return;
-  }
+  var el = document.getElementById('queue-list'); document.getElementById('queue-count').textContent = queue.length + ' waiting';
+  if (!queue.length) { el.innerHTML = '<div class="empty">No students in queue</div>'; return; }
   el.innerHTML = queue.map(function(q) {
-    return '<div class="list-item">' +
-      '<div class="list-item-id">' + q.student + '</div>' +
-      '<div class="list-item-meta">' + purposeBadge(q.purpose) +
-      (q.submitted_by !== q.student ? ' — via ' + q.submitted_by : '') +
-      '<br>Requested ' + q.submitted_at + '</div></div>';
+    return '<div class="list-item"><div class="list-item-id">' + q.student + '</div><div class="list-item-meta">' + purposeBadge(q.purpose) + (q.submitted_by !== q.student ? ' — via ' + q.submitted_by : '') + '<br>Requested ' + q.submitted_at + '</div></div>';
   }).join('');
 }
 
 function renderRecent(sessions) {
-  var el = document.getElementById('recent-list');
-  document.getElementById('recent-count').textContent = sessions.length + ' sessions';
-  if (!sessions.length) {
-    el.innerHTML = '<div class="empty">No sessions recorded today</div>';
-    return;
-  }
+  var el = document.getElementById('recent-list'); document.getElementById('recent-count').textContent = sessions.length + ' sessions';
+  if (!sessions.length) { el.innerHTML = '<div class="empty">No sessions recorded today</div>'; return; }
   el.innerHTML = sessions.map(function(s) {
     var statusColor = s.status === 'active' ? 'var(--accent-2)' : 'var(--muted)';
-    return '<div class="list-item">' +
-      '<div class="list-item-id">' + s.student + '</div>' +
-      '<div class="list-item-meta">' + purposeBadge(s.purpose) +
-      ' · ' + s.pc + ' · ' + s.alloc + ' min' +
-      '<br><span style="color:var(--muted);font-size:.7rem">' + s.start + '</span></div>' +
-      '<span style="font-size:.7rem;color:' + statusColor + '">' + s.status + '</span></div>';
+    return '<div class="list-item"><div class="list-item-id">' + s.student + '</div><div class="list-item-meta">' + purposeBadge(s.purpose) + ' · ' + s.pc + ' · ' + s.alloc + ' min<br><span style="color:var(--muted);font-size:.7rem">' + s.start + '</span></div><span style="font-size:.7rem;color:' + statusColor + '">' + s.status + '</span></div>';
   }).join('');
 }
 
@@ -222,7 +192,7 @@ function renderPending(pending) {
   var section = document.getElementById('pending-section'), abBadge = document.getElementById('ab-badge');
   if (!pending.length) { section.style.display = 'none'; abBadge.style.display = 'none'; return; }
   section.style.display = ''; abBadge.style.display = ''; document.getElementById('pending-count').textContent = pending.length + ' pending';
-
+  
   document.getElementById('pending-list').innerHTML = pending.map(function(r) {
     return '<div class="list-item"><div class="list-item-id">' + r.student + '</div><div class="list-item-meta">' + purposeBadge(r.purpose) + ' · ' + r.mins + ' min requested' + (r.link ? '<br><a href="' + r.link + '" target="_blank" style="color:var(--accent);font-size:.7rem">View video ↗</a>' : '') + '<br><span style="color:var(--muted);font-size:.7rem">Submitted by ' + r.by + ' at ' + r.at + '</span></div>' +
     '<button class="btn btn-primary" style="padding:5px 10px; font-size:0.75rem; background:var(--accent-2)" onclick="autoApprove(\'' + r.req_id + '\')">✓ Approve Now</button></div>';
@@ -238,24 +208,15 @@ async function submitRequest() {
   var purpose = document.getElementById('f-purpose').value;
   var link = document.getElementById('f-link').value.trim();
 
-  // --- NEW: Strict student ID validation with custom message ---
   if (!student) { showFormResult('Please type or select a Student ID.', false); return; }
-  if (!incharge) { showFormResult('Incharge ID is required.', false); return; }
-  if (allStudents.length > 0 && !allStudents.includes(student)) {
-    showFormResult('❌ Not a Lab ID yet. Please ask the Lab Instructor for an ID for this student.', false);
-    return;
-  }
-
-  // --- Persist incharge name ---
-  localStorage.setItem('labwall_incharge_name', incharge);
-
+  if (!incharge){ showFormResult('Incharge ID is required.', false); return; }
   showFormResult('Submitting & Allocating Time…', null);
 
   try {
     var res = await gasPost({action:'incharge_request', student_id:student, incharge_id:incharge, purpose:purpose, video_link:link, floor:'2'});
     if (res.ok) {
       var msg = '✅ Submitted! ' + student + ' allocated ' + res.allocated_mins + ' min for ' + PURPOSE_LABELS[purpose] + '.';
-
+      
       // The Bypass Logic: If it triggers the 120min restriction, intercept and auto-approve instantly
       if (res.needs_ab_approval) {
         msg = '✅ Auto-Approved! ' + student + ' instantly allocated ' + res.allocated_mins + ' min.';
@@ -265,11 +226,11 @@ async function submitRequest() {
            await gasPost({action: 'ab_approve_request', request_id: pReq.req_id, approved: true});
         }
       }
-
-      showFormResult(msg, true);
-      document.getElementById('f-student').value = '';
+      
+      showFormResult(msg, true); 
+      document.getElementById('f-student').value = ''; 
       document.getElementById('f-incharge').value = '';
-      document.getElementById('f-link').value = '';
+      document.getElementById('f-link').value = ''; 
       fetchDashboard();
     } else { showFormResult('Error: ' + (res.error || 'Request rejected'), false); }
   } catch(err) { showFormResult('Network error. Check lab connectivity.', false); }
@@ -293,8 +254,8 @@ async function fetchDashboard() {
   }
 }
 
-fetchStudents();
-fetchDashboard();
+fetchStudents(); 
+fetchDashboard(); 
 setInterval(fetchDashboard, 15000);
 </script>
 </body>
