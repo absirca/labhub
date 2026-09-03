@@ -1,17 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LabWall — Floor Allocation Dashboard V3.510</title>
-<!-- Favicon / Title Bar Icon Injected Here -->
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LabWall — Floor Allocation Dashboard V3.510</title>
 <link rel="icon" type="image/png" href="calogo.png">
 <style>
 :root{--bg:#0b0f1a;--surface:#131929;--border:#1e2d45;--accent:#2a7de1;--accent-2:#1bb67a;--warn:#e8a020;--danger:#e03c3c;--text:#dce8f7;--muted:#6b8ab0;--card-r:10px;--font:system-ui,-apple-system,sans-serif;--c-class:#2a7de1;--c-prog:#9561e8;--c-typing:#1bb67a;--c-research:#e8a020;--c-art:#e0507a;--c-ai:#e05020}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;padding:0}
+
+/* --- LOADER GRAPHICS --- */
+.loader-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(11, 15, 26, 0.85); z-index: 999999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--accent); font-weight: 700; font-size: 1.2rem;
+    backdrop-filter: blur(5px); transition: opacity 0.3s;
+}
+.spinner {
+    width: 45px; height: 45px; border: 4px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 1s linear infinite; margin-bottom: 15px;
+}
+.fetching-indicator {
+    display: inline-block; width: 12px; height: 12px; border: 2px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite;
+    margin-right: 6px; vertical-align: middle; display: none;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
 header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:100}
 .logo{display:flex;align-items:center;gap:10px}
-/* Updated Logo Class for the Image */
 .logo-image{width:40px;height:40px;object-fit:contain;border-radius:6px}
 .logo-text{font-size:1rem;font-weight:700;letter-spacing:-0.02em} .logo-sub{font-size:0.72rem;color:var(--muted)}
 .header-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -53,13 +71,22 @@ input:focus,select:focus{outline:none;border-color:var(--accent)} select option{
 </head>
 <body>
 
+<div id="main-loader" class="loader-overlay">
+  <div class="spinner"></div>
+  <div id="loader-text">Loading Lab Data...</div>
+</div>
+
 <header>
   <div class="logo">
-    <!-- PNG Logo Injected Here -->
     <img src="calogo.png" alt="Logo" class="logo-image">
     <div><div class="logo-text">LabWall Floor</div><div class="logo-sub">In-Charge Dashboard V3.510</div></div>
   </div>
-  <div class="header-right"><span id="ab-badge"></span><span class="pill pill-green" id="online-count">— PCs</span><span class="pill pill-blue" id="sync-status">Connecting…</span><span id="sync-time"></span></div>
+  <div class="header-right">
+    <span id="ab-badge"></span>
+    <span class="pill pill-green" id="online-count">— PCs</span>
+    <span class="pill pill-blue"><span class="fetching-indicator" id="sync-spinner"></span><span id="sync-status">Connecting…</span></span>
+    <span id="sync-time"></span>
+  </div>
 </header>
 
 <main>
@@ -79,7 +106,18 @@ input:focus,select:focus{outline:none;border-color:var(--accent)} select option{
         <input list="dl-students" id="f-student" placeholder="Type or click to search..." autocomplete="off" autocapitalize="none">
         <datalist id="dl-students"></datalist>
       </div>
-      <div class="form-group"><label>Your Incharge ID / Name</label><input type="text" id="f-incharge" placeholder="e.g. Kazi Sir" autocomplete="off"></div>
+      <div class="form-group">
+        <label>Instructor Authorization</label>
+        <select id="f-incharge">
+          <option value="">-- Select Instructor --</option>
+          <option value="2nd - 6th floor Operator">2nd - 6th floor Operator</option>
+          <option value="AB Sir">AB Sir</option>
+          <option value="Kazi Sir">Kazi Sir</option>
+          <option value="Rana Sir">Rana Sir</option>
+          <option value="Nurul Sir">Nurul Sir</option>
+          <option value="Habib Sir">Habib Sir</option>
+        </select>
+      </div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Purpose</label>
@@ -120,6 +158,7 @@ var PURPOSE_LABELS = {online_class:"Online Class",programming:"Programming",typi
 
 var allStudents = [];
 var currentPending = [];
+var initialLoad = true;
 
 var fPurpose = document.getElementById('f-purpose');
 var fLinkGroup = document.getElementById('f-link-group');
@@ -128,15 +167,10 @@ fPurpose.addEventListener('change', function(){
 });
 fLinkGroup.style.display = fPurpose.value === 'online_class' ? 'flex' : 'none';
 
-// --- SECURITY: Teacher Authorization Calculation ---
+// --- SECURITY: Strict Dropdown Validation ---
 function isTeacherAuthorized(name) {
-  if (!name) return false;
-  var n = name.toLowerCase().replace(/[^a-z]/g, ''); // Removes spaces and punctuation for calculation
-  var auths = ["absir", "kazisir", "ranasir", "nurulsir", "habibsir"];
-  for (var i = 0; i < auths.length; i++) {
-    if (n.includes(auths[i])) return true;
-  }
-  return false;
+  var auths = ["AB Sir", "Kazi Sir", "Rana Sir", "Nurul Sir", "Habib Sir"];
+  return auths.includes(name);
 }
 
 function updateAuthUI() {
@@ -144,6 +178,13 @@ function updateAuthUI() {
   var isAuth = isTeacherAuthorized(inchargeName);
   var badge = document.getElementById('ab-badge');
   var subBtn = document.getElementById('submit-btn');
+  
+  if (!inchargeName) {
+      badge.style.display = 'none';
+      subBtn.textContent = "Submit Request";
+      renderPending(currentPending);
+      return;
+  }
   
   badge.style.display = 'inline-block';
   if(isAuth) {
@@ -159,11 +200,10 @@ function updateAuthUI() {
       badge.style.background = "rgba(232,160,32,0.15)";
       subBtn.textContent = "Submit Request";
   }
-  // Re-calculate the pending list to hide/show manual bypass buttons
   renderPending(currentPending);
 }
 
-document.getElementById('f-incharge').addEventListener('input', function() {
+document.getElementById('f-incharge').addEventListener('change', function() {
   localStorage.setItem('labwall_incharge_name', this.value);
   updateAuthUI();
 });
@@ -256,15 +296,13 @@ function renderRecent(sessions) {
   }).join('');
 }
 
-// -------------------------------------------------------------
-// UI INJECTION: PROTECTED MANUAL OVERRIDE
-// -------------------------------------------------------------
 window.autoApprove = async function(reqId) {
   if (!isTeacherAuthorized(document.getElementById('f-incharge').value)) {
     showFormResult('❌ Unauthorized: Only Lab Instructors can force-approve.', false);
     return;
   }
   showFormResult('Forcing session approval...', null);
+  document.getElementById('sync-spinner').style.display = 'inline-block';
   await gasPost({action: 'ab_approve_request', request_id: reqId, approved: true});
   fetchDashboard();
   showFormResult('✅ Session Force-Approved & Time Allocated!', true);
@@ -283,9 +321,6 @@ function renderPending(pending) {
   }).join('');
 }
 
-// -------------------------------------------------------------
-// CORE INJECTION: SECURE SILENT BYPASS
-// -------------------------------------------------------------
 async function submitRequest() {
   var student = document.getElementById('f-student').value.trim();
   var incharge = document.getElementById('f-incharge').value.trim();
@@ -293,9 +328,11 @@ async function submitRequest() {
   var link = document.getElementById('f-link').value.trim();
 
   if (!student) { showFormResult('Please type or select a Student ID.', false); return; }
-  if (!incharge) { showFormResult('Incharge ID is required.', false); return; }
+  if (!incharge) { showFormResult('Instructor Authorization is required.', false); return; }
+  
+  // --- STRICT ERROR PROMPT FOR UNREGISTERED STUDENTS ---
   if (allStudents.length > 0 && !allStudents.includes(student)) {
-    showFormResult('❌ Not a Lab ID yet. Please ask the Lab Instructor for an ID for this student.', false);
+    showFormResult('Student Should first create a Lab id by writitng id and his password in paper and go to Lab instructor in person', false);
     return;
   }
 
@@ -303,6 +340,7 @@ async function submitRequest() {
   var isAuth = isTeacherAuthorized(incharge);
 
   showFormResult('Submitting Request…', null);
+  document.getElementById('sync-spinner').style.display = 'inline-block';
 
   try {
     var res = await gasPost({action:'incharge_request', student_id:student, incharge_id:incharge, purpose:purpose, video_link:link, floor:'2'});
@@ -327,7 +365,7 @@ async function submitRequest() {
       document.getElementById('f-link').value = '';
       fetchDashboard();
     } else { showFormResult('Error: ' + (res.error || 'Request rejected'), false); }
-  } catch(err) { showFormResult('Network error. Check lab connectivity.', false); }
+  } catch(err) { showFormResult('Network error. Check lab connectivity.', false); document.getElementById('sync-spinner').style.display = 'none'; }
 }
 
 function showFormResult(msg, ok) {
@@ -337,20 +375,45 @@ function showFormResult(msg, ok) {
 
 var lastFetchFailed = false;
 async function fetchDashboard() {
+  if (initialLoad) {
+    document.getElementById('main-loader').style.display = 'flex';
+  }
+  document.getElementById('sync-spinner').style.display = 'inline-block';
+  document.getElementById('sync-status').textContent = 'Fetching...';
+  document.getElementById('sync-status').style.color = 'var(--warn)';
+
   try {
     var data = await gasPost({ action: 'get_dashboard' });
     if (data.ok) {
       currentPending = data.pending || [];
       renderPCs(data.pcs); renderQueue(data.queue || []); renderRecent(data.recent || []); renderPending(currentPending);
-      document.getElementById('sync-status').textContent = 'Live'; document.getElementById('sync-status').style.color = 'var(--accent-2)'; document.getElementById('sync-time').textContent = 'Synced ' + (data.server_time || new Date().toLocaleTimeString()); lastFetchFailed = false;
+      document.getElementById('sync-status').textContent = 'Live'; 
+      document.getElementById('sync-status').style.color = 'var(--accent-2)'; 
+      document.getElementById('sync-time').textContent = 'Synced ' + (data.server_time || new Date().toLocaleTimeString()); 
+      lastFetchFailed = false;
     } else throw new Error('GAS error');
   } catch(err) {
-    if (!lastFetchFailed) { document.getElementById('sync-status').textContent = 'Offline'; document.getElementById('sync-status').style.color = 'var(--danger)'; lastFetchFailed = true; }
+    if (!lastFetchFailed) { 
+        document.getElementById('sync-status').textContent = 'Offline'; 
+        document.getElementById('sync-status').style.color = 'var(--danger)'; 
+        lastFetchFailed = true; 
+    }
+  } finally {
+      document.getElementById('sync-spinner').style.display = 'none';
+      if (initialLoad && !lastFetchFailed) {
+          document.getElementById('main-loader').style.display = 'none';
+          initialLoad = false;
+      }
   }
 }
 
-fetchStudents();
-fetchDashboard();
+// Ensure the student list is fetched completely before dismissing the initial loader
+async function bootSequence() {
+    await fetchStudents();
+    await fetchDashboard();
+}
+
+bootSequence();
 setInterval(fetchDashboard, 15000);
 </script>
 </body>
