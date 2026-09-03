@@ -289,7 +289,7 @@ async function submitRequest() {
     showFormResult('❌ Unregistered Student: Student must first create a Lab ID by writing their ID and password on paper and giving it to the Lab Instructor in person.', false);
     return;
   }
-  // Prevent duplicate requests
+  // Prevent duplicate requests (client-side, now also enforced server-side)
   var alreadyInQueue = currentQueue.find(q => q.student === student);
   var alreadyPending = currentPending.find(p => p.student === student);
   if (alreadyInQueue || alreadyPending) {
@@ -381,7 +381,8 @@ async function bootSequence() {
 }
 
 bootSequence();
-setInterval(fetchDashboard, 15000);
+// CG4 Fix: Polling interval increased from 15s to 30s to reduce GAS read quota consumption.
+setInterval(fetchDashboard, 30000);
 </script>
 </body>
 </html>
