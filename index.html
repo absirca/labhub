@@ -1,54 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LabWall — Floor Allocation Dashboard V3.600</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>LabWall — Floor Allocation Dashboard V3.800</title>
 <link rel="icon" type="image/png" href="calogo.png">
 <style>
 :root{--bg:#0b0f1a;--surface:#131929;--border:#1e2d45;--accent:#2a7de1;--accent-2:#1bb67a;--warn:#e8a020;--danger:#e03c3c;--text:#dce8f7;--muted:#6b8ab0;--card-r:10px;--font:system-ui,-apple-system,sans-serif;--c-class:#2a7de1;--c-prog:#9561e8;--c-typing:#1bb67a;--c-research:#e8a020;--c-art:#e0507a;--c-ai:#e05020}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;padding:0}
-.loader-overlay {position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(11,15,26,0.85);z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--accent);font-weight:700;font-size:1.2rem;backdrop-filter:blur(5px);transition:opacity 0.3s;}
-.spinner {width:45px;height:45px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:15px;}
-.fetching-indicator {display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin-right:6px;vertical-align:middle;display:none;}
-@keyframes spin {100%{transform:rotate(360deg);}}
+.loader-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(11,15,26,0.85);z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--accent);font-weight:700;font-size:1.2rem;backdrop-filter:blur(5px);transition:opacity 0.3s}
+.spinner{width:45px;height:45px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:15px}
+.fetching-indicator{display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin-right:6px;vertical-align:middle;display:none}
+@keyframes spin{100%{transform:rotate(360deg)}}
 header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:100}
 .logo{display:flex;align-items:center;gap:10px}
 .logo-image{width:40px;height:40px;object-fit:contain;border-radius:6px}
-.logo-text{font-size:1rem;font-weight:700;letter-spacing:-0.02em} .logo-sub{font-size:0.72rem;color:var(--muted)}
+.logo-text{font-size:1rem;font-weight:700;letter-spacing:-0.02em}
+.logo-sub{font-size:0.72rem;color:var(--muted)}
 .header-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .pill{font-size:0.72rem;padding:4px 10px;border-radius:999px;font-weight:600;border:1px solid}
-.pill-green{color:var(--accent-2);border-color:var(--accent-2)} .pill-blue{color:var(--accent);border-color:var(--accent)}
+.pill-green{color:var(--accent-2);border-color:var(--accent-2)}
+.pill-blue{color:var(--accent);border-color:var(--accent)}
 #sync-time{font-size:0.7rem;color:var(--muted)}
 main{padding:18px 16px;max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
 .section-title{display:block;font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px}
 .pc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px}
 .pc-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--card-r);padding:14px 12px;position:relative;overflow:hidden;transition:border-color 0.2s}
 .pc-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--status-color,var(--border))}
-.pc-card.status-available{--status-color:var(--accent-2)} .pc-card.status-in-session{--status-color:var(--accent)} .pc-card.status-admin{--status-color:var(--warn)} .pc-card.status-offline{--status-color:var(--muted)}
-.pc-name{font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:6px} .pc-student{font-size:1rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-card.status-available{--status-color:var(--accent-2)}
+.pc-card.status-in-session{--status-color:var(--accent)}
+.pc-card.status-admin{--status-color:var(--warn)}
+.pc-card.status-offline{--status-color:var(--muted)}
+.pc-name{font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:6px}
+.pc-student{font-size:1rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pc-purpose{font-size:0.7rem;margin-top:3px}
 .pc-timer{margin-top:10px;font-size:0.75rem;font-weight:bold;color:var(--accent);display:flex;align-items:center;justify-content:space-between}
 .form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--card-r);padding:18px}
 .form-card h3{font-size:0.9rem;font-weight:700;margin-bottom:14px}
-.form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px} .form-group{display:flex;flex-direction:column;gap:5px;flex:1;min-width:140px}
+.form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.form-group{display:flex;flex-direction:column;gap:5px;flex:1;min-width:140px}
 label{font-size:0.72rem;color:var(--muted);font-weight:600}
 input,select{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px 10px;font-size:0.85rem;font-family:var(--font);width:100%;transition:border-color 0.2s}
-input:focus,select:focus{outline:none;border-color:var(--accent)} select option{background:var(--surface)}
-.btn{padding:10px 18px;border-radius:7px;border:none;font-weight:700;font-size:0.85rem;cursor:pointer;transition:transform 0.1s;font-family:var(--font)} .btn:active{transform:scale(0.97)}
-.btn-primary{background:var(--accent);color:#fff} .btn-primary:hover{opacity:0.85}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+select option{background:var(--surface)}
+.btn{padding:10px 18px;border-radius:7px;border:none;font-weight:700;font-size:0.85rem;cursor:pointer;transition:transform 0.1s;font-family:var(--font)}
+.btn:active{transform:scale(0.97)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{opacity:0.85}
 .form-result{margin-top:10px;font-size:0.8rem;padding:10px 12px;border-radius:6px;display:none}
-.form-result.ok{background:rgba(27,182,122,0.1);color:var(--accent-2);border:1px solid rgba(27,182,122,0.3)} .form-result.error{background:rgba(224,60,60,0.1);color:var(--danger);border:1px solid rgba(224,60,60,0.3)}
+.form-result.ok{background:rgba(27,182,122,0.1);color:var(--accent-2);border:1px solid rgba(27,182,122,0.3)}
+.form-result.error{background:rgba(224,60,60,0.1);color:var(--danger);border:1px solid rgba(224,60,60,0.3)}
 .list-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--card-r);overflow:hidden}
 .list-header{padding:12px 16px;border-bottom:1px solid var(--border);font-size:0.85rem;font-weight:700;display:flex;justify-content:space-between;align-items:center}
 .list-count{font-size:0.7rem;color:var(--muted)}
-.list-item{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;font-size:0.82rem} .list-item:last-child{border-bottom:none}
-.list-item-id{font-weight:700;min-width:80px} .list-item-meta{flex:1;color:var(--muted);font-size:0.75rem}
+.list-item{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;font-size:0.82rem}
+.list-item:last-child{border-bottom:none}
+.list-item-id{font-weight:700;min-width:80px}
+.list-item-meta{flex:1;color:var(--muted);font-size:0.75rem}
 .list-item-badge{font-size:0.65rem;padding:2px 8px;border-radius:999px;font-weight:700;white-space:nowrap}
 .empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:0.8rem}
-.pending-card{background:rgba(232,160,32,0.06);border:1px solid rgba(232,160,32,0.25);border-radius:var(--card-r)} .pending-card .list-header{border-bottom-color:rgba(232,160,32,0.2);color:var(--warn)}
-.p-online_class{background:rgba(42,125,225,0.15);color:var(--c-class)} .p-programming{background:rgba(149,97,232,0.15);color:var(--c-prog)} .p-typing{background:rgba(27,182,122,0.15);color:var(--c-typing)} .p-research{background:rgba(232,160,32,0.15);color:var(--c-research)} .p-art_music{background:rgba(224,80,122,0.15);color:var(--c-art)} .p-ai_bigdata{background:rgba(224,80,32,0.15);color:var(--c-ai)} .p-general{background:rgba(107,138,176,0.15);color:var(--muted)}
-@keyframes shimmer{0%{opacity:0.4}60%{opacity:0.8}100%{opacity:0.4}} .skeleton{animation:shimmer 1.4s ease infinite;background:var(--border);border-radius:4px;height:14px}
-@media(max-width:540px){.pc-grid{grid-template-columns:repeat(2,1fr)} .form-row{flex-direction:column} header{padding:10px 14px} main{padding:12px 10px}}
+.pending-card{background:rgba(232,160,32,0.06);border:1px solid rgba(232,160,32,0.25);border-radius:var(--card-r)}
+.pending-card .list-header{border-bottom-color:rgba(232,160,32,0.2);color:var(--warn)}
+.p-online_class{background:rgba(42,125,225,0.15);color:var(--c-class)}
+.p-programming{background:rgba(149,97,232,0.15);color:var(--c-prog)}
+.p-typing{background:rgba(27,182,122,0.15);color:var(--c-typing)}
+.p-research{background:rgba(232,160,32,0.15);color:var(--c-research)}
+.p-art_music{background:rgba(224,80,122,0.15);color:var(--c-art)}
+.p-ai_bigdata{background:rgba(224,80,32,0.15);color:var(--c-ai)}
+.p-general{background:rgba(107,138,176,0.15);color:var(--muted)}
+@keyframes shimmer{0%{opacity:0.4}60%{opacity:0.8}100%{opacity:0.4}}
+.skeleton{animation:shimmer 1.4s ease infinite;background:var(--border);border-radius:4px;height:14px}
+@media(max-width:540px){.pc-grid{grid-template-columns:repeat(2,1fr)}.form-row{flex-direction:column}header{padding:10px 14px}main{padding:12px 10px}}
 </style>
 </head>
 <body>
@@ -61,7 +82,10 @@ input:focus,select:focus{outline:none;border-color:var(--accent)} select option{
 <header>
   <div class="logo">
     <img src="calogo.png" alt="Logo" class="logo-image">
-    <div><div class="logo-text">LabWall Floor</div><div class="logo-sub">In-Charge Dashboard V3.600</div></div>
+    <div>
+      <div class="logo-text">LabWall Floor</div>
+      <div class="logo-sub">In-Charge Dashboard V3.800</div>
+    </div>
   </div>
   <div class="header-right">
     <span class="pill pill-green" id="online-count">— PCs</span>
@@ -112,6 +136,12 @@ input:focus,select:focus{outline:none;border-color:var(--accent)} select option{
         </select>
       </div>
       <div class="form-group" id="f-link-group"><label>Video Link <span style="color:var(--muted);font-weight:400">(optional, YouTube)</span></label><input type="url" id="f-link" placeholder="https://youtube.com/watch?v=..." autocomplete="off"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Desired Start Time (optional, 24h)</label>
+        <input type="datetime-local" id="f-slot-start">
+      </div>
     </div>
     <button class="btn btn-primary" id="submit-btn" onclick="submitRequest()">Submit Request</button>
     <div class="form-result" id="form-result"></div>
@@ -177,49 +207,28 @@ async function fetchStudents() {
 
 function purposeBadge(p) { return '<span class="list-item-badge p-' + (p||"general") + '">' + (PURPOSE_LABELS[p]||p||"Unknown") + '</span>'; }
 
-// INTELLIGENT PC LOCATOR (বুদ্ধিমান পিসি নির্দেশক)
-function getSuggestedPC() {
-  if (!lastKnownPCs || lastKnownPCs.length === 0) return "Any free PC";
-  var available = lastKnownPCs.filter(function(p) {
-    if (p.pc.toLowerCase().includes('abubakar')) return false; 
-    if (p.op_state && p.op_state.toLowerCase() === 'inactive') return false; 
-    var noStudent = !p.student || p.student === 'LOCKED' || p.student === 'NONE' || p.student === '—' || p.student.trim() === '';
-    var isOffline = p.status && p.status.toLowerCase() === 'offline';
-    return noStudent || isOffline;
-  });
-  if (available.length > 0) {
-    var idx = Math.floor(Math.random() * available.length); 
-    return available[idx].pc;
-  }
-  return "Wait for a PC to free up";
-}
-
 function renderPCs(pcs) {
   var grid = document.getElementById('pc-grid');
   if (!pcs || !pcs.length) {
     grid.innerHTML = '<div style="color:var(--muted);font-size:.8rem;padding:16px">No PCs synchronized with master server.</div>';
     return;
   }
-
   var activeCount = 0;
   grid.innerHTML = pcs.map(function(pc) {
     var isInactive = pc.op_state && pc.op_state.toLowerCase() === 'inactive';
     var isLocked = !pc.student || pc.student === 'LOCKED' || pc.student === 'NONE' || pc.student === '—' || pc.student.trim() === '';
     var isSession = !isLocked && !isInactive;
     if (isSession) activeCount++;
-
     var sc = isInactive ? 'status-offline' : (isSession ? 'status-in-session' : 'status-available');
     var studentText = isInactive ? '<span style="color:var(--danger)">🚫 Inactive PC</span>' : (isSession ? pc.student : '<span style="color:var(--accent-2)">● Available</span>');
     var purposeHtml = isSession ? purposeBadge(pc.purpose) : '';
     var timeHtml = isSession ? '<div class="pc-timer">⏳ ' + pc.rem + ' min left</div>' : '<div style="height:25px"></div>';
-
     return '<div class="pc-card ' + sc + '">' +
       '<div class="pc-name">' + pc.pc + '</div>' +
       '<div class="pc-student">' + studentText + '</div>' +
       '<div class="pc-purpose">' + purposeHtml + '</div>' +
       timeHtml + '</div>';
   }).join('');
-
   document.getElementById('online-count').textContent = activeCount + ' / ' + pcs.length + ' active';
 }
 
@@ -231,11 +240,12 @@ function renderQueue(queue) {
     return;
   }
   el.innerHTML = queue.map(function(q) {
+    var slotInfo = (q.slot_start && q.slot_end) ? ' · Slot: ' + q.slot_start + ' – ' + q.slot_end : '';
     return '<div class="list-item">' +
       '<div class="list-item-id">' + q.student + '</div>' +
       '<div class="list-item-meta">' + purposeBadge(q.purpose) +
       (q.submitted_by !== q.student ? ' — via ' + q.submitted_by : '') +
-      '<br><span style="color:var(--accent-2)">🖥️ Assigned to: ' + q.pc + '</span></div></div>';
+      '<br>🖥️ Assigned to: ' + (q.pc || 'Wait') + slotInfo + '</div></div>';
   }).join('');
 }
 
@@ -261,7 +271,6 @@ function renderPending(pending) {
   var section = document.getElementById('pending-section');
   if (!pending.length) { section.style.display = 'none'; return; }
   section.style.display = ''; document.getElementById('pending-count').textContent = pending.length + ' pending';
-
   document.getElementById('pending-list').innerHTML = pending.map(function(r) {
     return '<div class="list-item"><div class="list-item-id">' + r.student + '</div><div class="list-item-meta">' + purposeBadge(r.purpose) + ' · ' + r.mins + ' min requested' + (r.link ? '<br><a href="' + r.link + '" target="_blank" style="color:var(--accent);font-size:.7rem">View video ↗</a>' : '') + '<br><span style="color:var(--warn);font-size:.7rem">Sent to Master Server Panel for AB Sir Approval</span></div></div>';
   }).join('');
@@ -269,82 +278,55 @@ function renderPending(pending) {
 
 async function submitRequest() {
   if (isSubmitting) return;
-
   var student = document.getElementById('f-student').value.trim();
   var incharge = document.getElementById('f-incharge').value.trim();
   var purpose = document.getElementById('f-purpose').value;
   var link = document.getElementById('f-link').value.trim();
-
+  var slotStart = document.getElementById('f-slot-start').value;
   if (!student) { showFormResult('Please type or select a Student ID.', false); return; }
   if (!incharge) { showFormResult('Instructor Authorization is required.', false); return; }
-  
   if (allStudents.length > 0 && !allStudents.includes(student)) {
     showFormResult('❌ Unregistered Student: Student must first create a Lab ID by writing their ID and password on paper and giving it to the Lab Instructor in person.', false);
     return;
   }
-
+  // Prevent duplicate requests
   var alreadyInQueue = currentQueue.find(q => q.student === student);
   var alreadyPending = currentPending.find(p => p.student === student);
   if (alreadyInQueue || alreadyPending) {
-     showFormResult(`❌ Request Blocked: ${student} is already waiting in the Queue or Pending list.`, false);
-     return;
+    showFormResult(`❌ Request Blocked: ${student} is already waiting in the Queue or Pending list.`, false);
+    return;
   }
-
   isSubmitting = true;
   var subBtn = document.getElementById('submit-btn');
   var originalBtnText = subBtn.textContent;
   subBtn.textContent = "Processing... Please wait";
   subBtn.style.opacity = "0.6";
   subBtn.style.cursor = "not-allowed";
-
-  showFormResult('Submitting Request & Locating PC…', null);
+  showFormResult('Submitting Request…', null);
   document.getElementById('sync-spinner').style.display = 'inline-block';
-
-  var attempt = 1;
-  var maxAttempts = 4;
-  var success = false;
-
-  while (attempt <= maxAttempts && !success) {
-      try {
-        var suggestedPC = getSuggestedPC(); 
-        var res = await gasPost({action:'incharge_request', student_id:student, incharge_id:incharge, purpose:purpose, video_link:link, floor:'2', pc:suggestedPC});
-        
-        if (res.ok) {
-          success = true;
-          var msg = '';
-
-          if (res.needs_ab_approval) {
-            msg = `⏳ Heavy Request (>120m): Sent to Master Server for AB Sir approval. 🖥️ Please wait for approval, then use: ${suggestedPC}`;
-          } else {
-            msg = `✅ Request Registered! ${student} is allocated ${res.allocated_mins} min. 🖥️ Please log in at: ${suggestedPC}`;
-          }
-
-          showFormResult(msg, true);
-          document.getElementById('f-student').value = '';
-          document.getElementById('f-link').value = '';
-          fetchDashboard();
-        } else {
-            var errStr = String(res.error || '').toLowerCase();
-            if (errStr.includes("lock") || errStr.includes("লক") || errStr.includes("prokriya") || errStr.includes("প্রক্রিয়া")) {
-                showFormResult(`Server busy... Retrying automatically (${attempt}/${maxAttempts})`, null);
-                await new Promise(r => setTimeout(r, 4000));
-                attempt++;
-            } else {
-                showFormResult('Error: ' + (res.error || 'Request rejected'), false);
-                break;
-            }
-        }
-      } catch(err) { 
-          showFormResult(`Network unstable. Retrying... (${attempt}/${maxAttempts})`, null); 
-          await new Promise(r => setTimeout(r, 4000));
-          attempt++;
+  try {
+    var payload = {action:'incharge_request', student_id:student, incharge_id:incharge, purpose:purpose, video_link:link, floor:'2'};
+    if (slotStart) payload.slot_start = slotStart.replace('T', ' '); // Convert to "YYYY-MM-DD HH:MM"
+    var res = await gasPost(payload);
+    if (res.ok) {
+      var msg = '';
+      if (res.needs_ab_approval) {
+        msg = `⏳ Heavy Request (>120m): Sent to Master Server for AB Sir approval. Assigned PC: ${res.assigned_pc}`;
+      } else {
+        msg = `✅ Request Registered! ${student} is allocated ${res.allocated_mins} min. Assigned PC: ${res.assigned_pc}`;
+        if (res.slot_start) msg += ` (Slot: ${res.slot_start} – ${res.slot_end})`;
       }
+      showFormResult(msg, true);
+      document.getElementById('f-student').value = '';
+      document.getElementById('f-link').value = '';
+      document.getElementById('f-slot-start').value = '';
+      fetchDashboard();
+    } else {
+      showFormResult('Error: ' + (res.error || 'Request rejected'), false);
+    }
+  } catch(err) {
+    showFormResult('Network error. Check lab connectivity.', false);
   }
-
-  if (!success && attempt > maxAttempts) {
-      showFormResult('❌ Server is severely backlogged. Could not process request. Try again shortly.', false);
-  }
-
   isSubmitting = false;
   subBtn.textContent = originalBtnText;
   subBtn.style.opacity = "1";
@@ -363,37 +345,39 @@ async function fetchDashboard() {
   document.getElementById('sync-spinner').style.display = 'inline-block';
   document.getElementById('sync-status').textContent = 'Fetching...';
   document.getElementById('sync-status').style.color = 'var(--warn)';
-
   try {
     var data = await gasPost({ action: 'get_dashboard' });
     if (data.ok) {
       lastKnownPCs = data.pcs || [];
       currentPending = data.pending || [];
-      currentQueue = data.queue || []; 
-      renderPCs(lastKnownPCs); renderQueue(currentQueue); renderRecent(data.recent || []); renderPending(currentPending);
-      document.getElementById('sync-status').textContent = 'Live'; 
-      document.getElementById('sync-status').style.color = 'var(--accent-2)'; 
-      document.getElementById('sync-time').textContent = 'Synced ' + (data.server_time || new Date().toLocaleTimeString()); 
+      currentQueue = data.queue || [];
+      renderPCs(lastKnownPCs);
+      renderQueue(currentQueue);
+      renderRecent(data.recent || []);
+      renderPending(currentPending);
+      document.getElementById('sync-status').textContent = 'Live';
+      document.getElementById('sync-status').style.color = 'var(--accent-2)';
+      document.getElementById('sync-time').textContent = 'Synced ' + (data.server_time || new Date().toLocaleTimeString());
       lastFetchFailed = false;
     } else throw new Error('GAS error');
   } catch(err) {
-    if (!lastFetchFailed) { 
-        document.getElementById('sync-status').textContent = 'Offline'; 
-        document.getElementById('sync-status').style.color = 'var(--danger)'; 
-        lastFetchFailed = true; 
+    if (!lastFetchFailed) {
+      document.getElementById('sync-status').textContent = 'Offline';
+      document.getElementById('sync-status').style.color = 'var(--danger)';
+      lastFetchFailed = true;
     }
   } finally {
-      document.getElementById('sync-spinner').style.display = 'none';
-      if (initialLoad && !lastFetchFailed) {
-          document.getElementById('main-loader').style.display = 'none';
-          initialLoad = false;
-      }
+    document.getElementById('sync-spinner').style.display = 'none';
+    if (initialLoad && !lastFetchFailed) {
+      document.getElementById('main-loader').style.display = 'none';
+      initialLoad = false;
+    }
   }
 }
 
 async function bootSequence() {
-    await fetchStudents();
-    await fetchDashboard();
+  await fetchStudents();
+  await fetchDashboard();
 }
 
 bootSequence();
