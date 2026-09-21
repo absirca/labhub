@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LabWall — Floor Allocation V5.2</title>
+<title>LabWall — Floor Allocation V5.3</title>
 <link rel="icon" type="image/png" href="calogo.png">
 <style>
 :root{--bg:#0b0f1a;--surface:#131929;--surface2:#0e1626;--border:#1e2d45;--accent:#2a7de1;--accent-2:#1bb67a;--warn:#e8a020;--danger:#e03c3c;--teacher:#d6336c;--ab:#f59e0b;--text:#dce8f7;--muted:#6b8ab0;--card-r:10px;--font:system-ui,-apple-system,sans-serif;--c-class:#2a7de1;--c-prog:#9561e8;--c-typing:#1bb67a;--c-research:#e8a020;--c-art:#e0507a;--c-ai:#e05020}
@@ -40,12 +40,21 @@ main{padding:18px 16px 120px;max-width:960px;margin:0 auto;display:flex;flex-dir
 .pc-card.status-offline{--status-color:var(--warn)}
 .pc-card.status-inactive{--status-color:var(--muted)}
 .pc-card.skeleton-mode{opacity:.45}
-.pc-name{font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.pc-name{font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.pc-name .pc-name-left{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-name .pc-name-right{display:inline-flex;gap:5px;align-items:center;flex-shrink:0}
 .pc-student{font-size:1rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pc-purpose{font-size:.7rem;margin-top:3px}
 .pc-timer{margin-top:10px;font-size:.75rem;font-weight:bold;color:var(--accent);display:flex;justify-content:space-between}
 .pc-badge{font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,.07)}
 .pc-badge.teacher{background:rgba(214,51,108,.18);color:var(--teacher)}
+.pc-toggle{font-size:.65rem;line-height:1;padding:3px 7px;border-radius:4px;border:1px solid var(--border);background:rgba(0,0,0,.5);color:var(--muted);cursor:pointer;font-weight:800;font-family:inherit;transition:border-color .15s,color .15s,background .15s}
+.pc-toggle:hover{background:rgba(42,125,225,.15)}
+.pc-toggle.to-active{border-color:var(--accent-2);color:var(--accent-2)}
+.pc-toggle.to-active:hover{background:rgba(27,182,122,.18)}
+.pc-toggle.to-inactive{border-color:var(--danger);color:var(--danger)}
+.pc-toggle.to-inactive:hover{background:rgba(224,60,60,.18)}
+.pc-toggle:disabled{opacity:.4;cursor:wait}
 .form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--card-r);padding:18px;transition:border-color .2s}
 .form-card.teacher-mode{border-color:var(--teacher)}
 .form-card.ab-mode{border-color:var(--ab);box-shadow:0 0 0 1px rgba(245,158,11,.2)}
@@ -179,7 +188,7 @@ select option{background:var(--surface)}
       <img src="calogo.png" alt="Logo">
       <div style="text-align:left">
         <div class="role-title">LabWall Floor</div>
-        <div class="role-sub">Allocation Dashboard V5.2</div>
+        <div class="role-sub">Allocation Dashboard V5.3</div>
       </div>
     </div>
     <div class="role-sub" style="margin-top:14px">How would you like to continue?</div>
@@ -188,7 +197,7 @@ select option{background:var(--surface)}
       <div class="role-card teacher" id="role-teacher-card">
         <span class="role-icon">👨‍🏫</span>
         <div class="role-card-title">Teacher Login</div>
-        <div class="role-card-desc">Allocate sessions directly, approve heavy requests, and manage the floor.</div>
+        <div class="role-card-desc">Allocate sessions directly, approve heavy requests, manage the floor, toggle PC state.</div>
         <span class="role-card-arrow">→</span>
 
         <div class="role-teacher-form" id="role-teacher-form">
@@ -226,7 +235,7 @@ select option{background:var(--surface)}
     <img src="calogo.png" alt="Logo" class="logo-image">
     <div>
       <div class="logo-text">LabWall Floor</div>
-      <div class="logo-sub">In-Charge Dashboard V5.2</div>
+      <div class="logo-sub">In-Charge Dashboard V5.3</div>
     </div>
   </div>
   <div class="header-right">
@@ -461,7 +470,7 @@ select option{background:var(--surface)}
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
-   LabWall Floor Allocation V5.2
+   LabWall Floor Allocation V5.3
    ═══════════════════════════════════════════════════════════════ */
 var GAS_URL = "https://script.google.com/macros/s/AKfycbwPil4jN4G7ah-gJH_sngNKPk3_kzEKXSQeGuvNis-0rShwwwvPAB4684-ESIL5A5K3IQ/exec";
 var PURPOSE_LABELS = {online_class:"Online Class",programming:"Programming",typing:"Typing",research:"Research",art_music:"Art / Music",ai_bigdata:"AI & Big Data",general:"General"};
@@ -487,6 +496,7 @@ var isSubmitting  = false;
 var lastFetchFailed = false;
 var loaded = { students:false, pcs:false, queue:false };
 var _teacherFetchCounter = 0;
+var _pcToggleInFlight = {};
 
 /* ── Refs ──────────────────────────────────────────────────── */
 var fPurpose = document.getElementById('f-purpose');
@@ -609,7 +619,7 @@ document.getElementById('role-student-card').addEventListener('click', function(
   toast('👨‍🎓 Continuing as student', 'ok');
 });
 document.getElementById('role-pass').addEventListener('keypress', function(e){
-  if(e.key === 'Enter'){ e.stopPropagation(); roleTeacherSubmit(this.previousElementSibling ? null : null); }
+  if(e.key === 'Enter'){ e.stopPropagation(); roleTeacherSubmit(null); }
 });
 
 function setRole(role, name){
@@ -693,6 +703,7 @@ function applyRoleUI(){
 
   updateBookingWindow();
   renderQuickDates();
+  renderPCs(lastKnownPCs);
   renderPending(currentPending);
 }
 
@@ -998,10 +1009,11 @@ function renderPCs(pcs){
     var cls = classifyPC(pc);
     var isTeacherUse = cls === 'teacher';
     var isSession = cls === 'session';
+    var isInactive = cls === 'inactive';
     if(isSession || isTeacherUse) activeCount++;
 
     var studentText;
-    if(cls === 'inactive') studentText = '<span style="color:var(--muted)">⚪ Inactive</span>';
+    if(isInactive) studentText = '<span style="color:var(--muted)">⚪ Inactive</span>';
     else if(cls === 'offline') studentText = '<span style="color:var(--warn)">🟠 Offline</span>';
     else if(isTeacherUse) studentText = '<span style="color:var(--teacher)">🔴 '+pc.student+'</span>';
     else if(isSession) studentText = pc.student;
@@ -1015,10 +1027,27 @@ function renderPCs(pcs){
     var badge = '';
     if(isTeacherUse) badge = '<span class="pc-badge teacher">TEACHER</span>';
     else if(cls === 'offline') badge = '<span class="pc-badge">OFFLINE</span>';
-    else if(cls === 'inactive') badge = '<span class="pc-badge">INACTIVE</span>';
+    else if(isInactive) badge = '<span class="pc-badge">INACTIVE</span>';
+
+    var toggleBtn = '';
+    if(isTeacher){
+      var safePcAttr = String(pc.pc).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+      var busy = _pcToggleInFlight[pc.pc] ? ' disabled' : '';
+      if(isInactive){
+        toggleBtn = '<button class="pc-toggle to-active"'+busy+
+                    ' onclick="event.stopPropagation();togglePcState(\''+safePcAttr+'\',true)"'+
+                    ' title="Mark this PC active">▶ Active</button>';
+      } else {
+        toggleBtn = '<button class="pc-toggle to-inactive"'+busy+
+                    ' onclick="event.stopPropagation();togglePcState(\''+safePcAttr+'\',false)"'+
+                    ' title="Mark this PC inactive">⏸ Inactive</button>';
+      }
+    }
 
     return '<div class="pc-card status-'+cls+'">'+
-             '<div class="pc-name"><span>'+pc.pc+'</span>'+badge+'</div>'+
+             '<div class="pc-name"><span class="pc-name-left">'+pc.pc+'</span>'+
+               '<span class="pc-name-right">'+toggleBtn+badge+'</span>'+
+             '</div>'+
              '<div class="pc-student">'+studentText+'</div>'+
              '<div class="pc-purpose">'+purposeHtml+'</div>'+
              timeHtml+
@@ -1104,7 +1133,37 @@ function renderDailyRuleBadge(rule){
   container.textContent = '📅 ' + (rule.day || 'today') + ' · ' + ms;
 }
 
-/* ── Approve / decline (NOW SEND TOKEN) ───────────────────── */
+/* ── PC state toggle (teacher only) ───────────────────────── */
+async function togglePcState(pcName, currentlyInactive){
+  if(!isTeacher){ toast('Only teachers can change PC state.', 'err'); return; }
+  if(!teacherToken){ toast('Session expired — please log in again.', 'err'); return; }
+  if(_pcToggleInFlight[pcName]) return;
+  var newState = currentlyInactive ? 'Active' : 'Inactive';
+  var confirmMsg = currentlyInactive
+    ? 'Mark ' + pcName + ' as ACTIVE?\n\nStudents will be able to book it again.'
+    : 'Mark ' + pcName + ' as INACTIVE?\n\nNo new bookings will be accepted. Any running session is not interrupted.';
+  if(!confirm(confirmMsg)) return;
+  _pcToggleInFlight[pcName] = true;
+  renderPCs(lastKnownPCs);
+  toast('Updating ' + pcName + '…', 'warn');
+  try{
+    var res = await gasPost({action:'toggle_pc_state', token: teacherToken, pc: pcName, state: newState});
+    if(res && res.ok){
+      toast('✅ ' + pcName + ' → ' + newState, 'ok');
+    } else {
+      var msg = (res && res.error) || 'Update failed';
+      toast('⚠ ' + msg, 'err');
+      if(/session|login|expired/i.test(msg)) teacherLogout();
+    }
+  } catch(e){
+    toast('❌ Network error', 'err');
+  } finally {
+    delete _pcToggleInFlight[pcName];
+    fetchDashboard();
+  }
+}
+
+/* ── Approve / decline ─────────────────────────────────────── */
 async function teacherApprove(reqId){
   if(!isTeacher) return;
   if(!teacherToken){ toast('Session expired — please log in again', 'err'); return; }
@@ -1257,7 +1316,7 @@ async function submitRequest(){
       fetchDashboard();
     } else {
       var errMsg = res.error || 'Request rejected';
-      if(/slot|pc|wait|taken|window|today|tomorrow|teacher|students|approval|allowed/i.test(errMsg)){
+      if(/slot|pc|wait|taken|window|today|tomorrow|teacher|students|approval|allowed|inactive/i.test(errMsg)){
         showFormResult('⚠ ' + errMsg, 'warn');
         toast('⚠ ' + errMsg, 'warn');
       } else {
