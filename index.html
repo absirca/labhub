@@ -1453,9 +1453,9 @@ document.getElementById('cp-new2').addEventListener('keypress', function(e){
 markLoading('students', '…');
 markLoading('pcs', '…');
 markLoading('queue', '…');
-loadTeacherNames();
-fetchStudents();
 fetchDashboard();
+setTimeout(fetchStudents, 400);
+setTimeout(loadTeacherNames, 800);
 setInterval(fetchDashboard, 30000);
 
 setTimeout(function(){
